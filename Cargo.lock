@@ -233,9 +233,6 @@ dependencies = [
 [[package]]
 name = "client"
 version = "0.1.0"
-dependencies = [
- "pgp",
-]
 
 [[package]]
 name = "cmac"
@@ -282,6 +279,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a97769d94ddab943e4510d138150169a2758b5ef3eb191a9ee688de3e23ef7b3"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "crypto"
+version = "0.1.0"
+dependencies = [
+ "pgp",
+ "sha2",
 ]
 
 [[package]]
