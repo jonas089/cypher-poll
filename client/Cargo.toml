@@ -5,3 +5,5 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+kairos-delta-tree = {git="https://github.com/jonas089/kairos-delta-tree/"}
+crypto = {path="../crypto"}

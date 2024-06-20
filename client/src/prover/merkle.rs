@@ -1,0 +1,1 @@
+// compute a merkle proof for an identity
