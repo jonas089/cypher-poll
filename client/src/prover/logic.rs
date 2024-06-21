@@ -1,5 +1,5 @@
 // compute a zero knowledge proof
-// that Sha256(nullifier, public_key) is a leaf 
+// that Sha256(nullifier, public_key) is a leaf
 // that the merkle proof of that leaf is valid for one of the roots in a given list
 
 use std::path::PathBuf;
@@ -7,39 +7,38 @@ use std::path::PathBuf;
 // private inputs: tree snapshot, public key
 // public inputs/outputs: list of roots
 // public outputs: nullifier
-use crypto::identity::{Identity, Nullifier, UniqueIdentity};
-use voting_tree::VotingTree;
-use crate::storage::TreeRoot;
-use serde::{Serialize, Deserialize};
 use super::merkle::compute_root;
+use crate::storage::TreeRoot;
 use crypto::gpg::GpgSigner;
+use crypto::identity::{Identity, Nullifier, UniqueIdentity};
+use serde::{Deserialize, Serialize};
+use voting_tree::VotingTree;
 
 #[derive(Serialize, Deserialize)]
-pub struct CircuitInputs{
+pub struct CircuitInputs {
     pub root_history: Vec<TreeRoot>,
     pub snapshot: VotingTree,
     pub nullifier: Nullifier,
-    pub public_key_path: PathBuf
-    // todo: serialize / deserialize pgp public key
+    pub public_key_path: PathBuf, // todo: serialize / deserialize pgp public key
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct CircuitOutputs{
+pub struct CircuitOutputs {
     pub nullifier: Nullifier,
-    pub root_history: Vec<TreeRoot>
+    pub root_history: Vec<TreeRoot>,
 }
 
-pub fn prover_logic(inputs: &mut CircuitInputs) -> CircuitOutputs{
-    let mut gpg_signer: GpgSigner = GpgSigner{
+pub fn prover_logic(inputs: &mut CircuitInputs) -> CircuitOutputs {
+    let mut gpg_signer: GpgSigner = GpgSigner {
         secret_key_asc_path: None,
         public_key_asc_path: Some(inputs.public_key_path.clone()),
         signed_public_key: None,
-        signed_secret_key: None
+        signed_secret_key: None,
     };
     gpg_signer.init_verifier();
-    let mut uid = UniqueIdentity{
+    let mut uid = UniqueIdentity {
         nullifier: Some(inputs.nullifier.clone()),
-        identity: None
+        identity: None,
     };
     uid.compute_public_identity(gpg_signer.signed_public_key.unwrap());
     let public_identity: Identity = uid.identity.unwrap();
@@ -50,11 +49,11 @@ pub fn prover_logic(inputs: &mut CircuitInputs) -> CircuitOutputs{
 
     // Todo: Make Root History a HashMap / HashSet => especially important
     // when developing an on-chain solution.
-    if !inputs.root_history.contains(&new_root){
+    if !inputs.root_history.contains(&new_root) {
         panic!("Root is not contained in Root History")
     };
-    CircuitOutputs{
+    CircuitOutputs {
         nullifier: inputs.nullifier.clone(),
-        root_history: inputs.root_history.clone()
+        root_history: inputs.root_history.clone(),
     }
 }

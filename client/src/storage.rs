@@ -1,4 +1,4 @@
-use voting_tree::{VotingTree, crypto::hash_bytes};
+use voting_tree::{crypto::hash_bytes, VotingTree};
 
 /// In production, this would live on a Blockchain
 /// a derivation of the tornadocash merkle tree
@@ -6,47 +6,51 @@ use voting_tree::{VotingTree, crypto::hash_bytes};
 use crypto::identity::{Identity, Nullifier};
 pub type TreeRoot = Vec<u8>;
 
-pub struct InMemoryTreeState{
-    root_history: Vec<TreeRoot>,
-    used_nullifiers: Vec<Nullifier>,
-    delta_tree: VotingTree,
-    leafs: Vec<Identity>
+pub struct InMemoryTreeState {
+    pub root_history: Vec<TreeRoot>,
+    pub used_nullifiers: Vec<Nullifier>,
+    pub voting_tree: VotingTree,
+    pub leafs: Vec<Identity>,
 }
 
-impl InMemoryTreeState{
-    pub fn new(&self, root_history: Vec<TreeRoot>, used_nullifiers: Vec<Nullifier>, leafs: Vec<Identity>) -> InMemoryTreeState{
-
-        // todo: initialize fixed-size delta tree
-        let mut delta_tree: VotingTree = VotingTree{
-            zero_node: hash_bytes(vec![0;32]),
+impl InMemoryTreeState {
+    pub fn new(
+        &self,
+        root_history: Vec<TreeRoot>,
+        used_nullifiers: Vec<Nullifier>,
+        leafs: Vec<Identity>,
+    ) -> InMemoryTreeState {
+        let mut voting_tree: VotingTree = VotingTree {
+            zero_node: hash_bytes(vec![0; 32]),
             zero_levels: Vec::new(),
             // size must equal tree depth
-            filled: vec![vec![];5],
+            filled: vec![vec![]; 5],
             root: None,
             index: 0,
             // the maximum amount of identities this tree can store
             // is 2^depth (depth:5 => max_identity_count:32)
-            depth: 5
+            depth: 5,
         };
-        delta_tree.calculate_zero_levels();
+        voting_tree.calculate_zero_levels();
 
-        InMemoryTreeState{
+        InMemoryTreeState {
             root_history,
             used_nullifiers,
-            delta_tree,
-            leafs
+            voting_tree,
+            leafs,
         }
     }
 
-    pub fn insert_nullifier(&mut self, identity: Identity) -> VotingTree{
+    pub fn insert_nullifier(&mut self, identity: Identity) -> VotingTree {
         // take a snapshot of the Tree before insertion
-        let snapshot = self.delta_tree.clone();
+        let snapshot = self.voting_tree.clone();
         // append the real tree by a new identity
-        self.delta_tree.add_leaf(identity.clone());
+        self.voting_tree.add_leaf(identity.clone());
         // store the new identity
         self.leafs.push(identity);
         // store the new root in state
-        self.root_history.push(self.delta_tree.root.clone().expect("Tree has no root"));
+        self.root_history
+            .push(self.voting_tree.root.clone().expect("Tree has no root"));
         // return the snapshot -> this will be used when generating the merkle proof
         snapshot
     }

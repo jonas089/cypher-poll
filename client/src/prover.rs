@@ -1,2 +1,2 @@
-pub mod merkle;
 pub mod logic;
+pub mod merkle;

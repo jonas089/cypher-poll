@@ -1,5 +1,5 @@
 extern crate sha256;
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 
 pub fn hash_bytes(input: Vec<u8>) -> Vec<u8> {
     let mut hasher = Sha256::new();
@@ -8,7 +8,7 @@ pub fn hash_bytes(input: Vec<u8>) -> Vec<u8> {
     result.to_vec()
 }
 
-pub fn hash_left_right(mut left: Vec<u8>, mut right: Vec<u8>) -> Vec<u8>{
+pub fn hash_left_right(mut left: Vec<u8>, mut right: Vec<u8>) -> Vec<u8> {
     left.append(&mut right);
     hash_bytes(left)
 }

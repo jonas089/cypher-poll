@@ -1308,6 +1308,11 @@ dependencies = [
 [[package]]
 name = "service"
 version = "0.1.0"
+dependencies = [
+ "client",
+ "crypto",
+ "voting-tree",
+]
 
 [[package]]
 name = "sha1"
