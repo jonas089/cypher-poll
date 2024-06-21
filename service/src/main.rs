@@ -4,31 +4,24 @@
 mod constants;
 pub mod gauth;
 use gauth::{query_user_gpg_keys, raw_gpg_keys};
-use risc0_prover::{prover::prove_default, verifier::verify_vote};
+use std::collections::HashSet;
 use std::env;
-use std::{
-    collections::HashSet,
-    fs,
-    path::{Path, PathBuf},
-};
 // registers voters / inserts new identities into the tree
 // if the signature is valid
 // if the account is unique
 // if the public key corresponds to the associated github keys
 // for the user
 use client::types::IdentityPayload;
-use crypto::{
-    gpg::GpgSigner,
-    identity::{self, Identity, Nullifier, UniqueIdentity},
-};
-use pgp::{types::Mpi, SignedPublicKey};
-use risc0_zkvm::Receipt;
+use crypto::{gpg::GpgSigner, identity::Identity};
+use pgp::types::Mpi;
+use risc0_prover::{prover::prove_default, verifier::verify_vote};
 use voting_tree::{crypto::hash_bytes, VotingTree};
 use zk_associated::storage::{InMemoryTreeState, Snapshot};
 
 type GitHubUser = String;
 struct ServiceState {
     github_users: HashSet<GitHubUser>,
+    tree_state: InMemoryTreeState
 }
 impl ServiceState {
     // register a voter, takes a risc0 receipt as input (currently not prover-generic)
@@ -41,7 +34,6 @@ impl ServiceState {
         public_key: String,
         identity: Identity,
         username: GitHubUser,
-        tree_state: &mut InMemoryTreeState,
     ) -> Snapshot {
         let mut signer = GpgSigner {
             secret_key_asc_path: None,
@@ -59,7 +51,7 @@ impl ServiceState {
             panic!("GitHubUser is not unique")
         };
         self.github_users.insert(username);
-        tree_state.insert_nullifier(identity)
+        self.tree_state.insert_nullifier(identity)
     }
 }
 
@@ -107,8 +99,10 @@ fn main() {
 
 #[tokio::test]
 async fn submit_zk_vote() {
-    use risc0_prover::{prover, verifier};
-    use risc0_types::{CircuitInputs, CircuitOutputs};
+    use crypto::identity::UniqueIdentity;
+    use risc0_types::CircuitInputs;
+    use risc0_zkvm::Receipt;
+    use std::{collections::HashSet, fs, path::PathBuf};
     // initialize tree_state and service_state
     // process a registration request using the default keypair in ~/resources/test/
     // generate a vote proof
@@ -116,6 +110,7 @@ async fn submit_zk_vote() {
     let mut tree_state: InMemoryTreeState = default_tree_state();
     let mut service_state: ServiceState = ServiceState {
         github_users: HashSet::new(),
+        tree_state
     };
     let mut identity: UniqueIdentity = UniqueIdentity {
         identity: None,
@@ -160,18 +155,17 @@ async fn submit_zk_vote() {
             public_key_string.clone(),
             identity.identity.expect("Missing identity"),
             "jonas089".to_string(),
-            &mut tree_state,
         )
         .await;
 
     // generate a proof -> redeem the nullifier
     let proof: Receipt = prove_default(CircuitInputs {
-        root_history: tree_state.root_history.clone(),
-        snapshot: tree_state.voting_tree.clone(),
+        root_history: service_state.tree_state.root_history.clone(),
+        snapshot: service_state.tree_state.voting_tree.clone(),
         nullifier: identity.nullifier.clone().expect("Missing Nullifier"),
         public_key_string: public_key_string.clone(),
     });
 
-    let is_valid: bool = verify_vote(proof, tree_state.root_history.clone());
+    let is_valid: bool = verify_vote(proof, service_state.tree_state.root_history.clone());
     assert!(is_valid)
 }

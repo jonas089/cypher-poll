@@ -1,9 +1,9 @@
 // GitHub authentication
 // should check the Github API for associated GPG keys and return them as a Vec
-use crate::constants::GITHUB_GPG_ROUTE;
+use crate::constants::{GIT_GPG_URL};
 use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, USER_AGENT};
 use serde_json::{Result, Value};
-use std::env;
+use std::{env};
 
 pub async fn query_user_gpg_keys(username: String) -> Value {
     let client = reqwest::Client::new();
@@ -29,7 +29,7 @@ pub async fn query_user_gpg_keys(username: String) -> Value {
 
     // Making the GET request
     let response = client
-        .get(GITHUB_GPG_ROUTE)
+        .get(GIT_GPG_URL)
         .headers(headers)
         .send()
         .await
