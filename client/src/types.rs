@@ -1,6 +1,4 @@
 use crypto::identity::Identity;
-use pgp::types::Mpi;
-use risc0_zkvm::Receipt;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]

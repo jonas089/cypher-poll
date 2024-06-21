@@ -10,12 +10,12 @@ use std::{
     path::PathBuf,
 };
 
-use clap::{builder::Str, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 use crypto::{
     gpg::GpgSigner,
     identity::{Identity, Nullifier, UniqueIdentity},
 };
-use pgp::{from_bytes_many, ser::Serialize, types::Mpi};
+use pgp::types::Mpi;
 use reqwest::blocking::Client;
 use risc0_prover::prover::prove_default;
 use risc0_types::CircuitInputs;
@@ -73,7 +73,9 @@ pub fn run(cli: Cli) {
             identity.generate_nullifier(random_seed);
 
             let mut nullifier_file = File::create(env::var("NULLIFIER_PATH").unwrap()).unwrap();
-            nullifier_file.write(&serde_json::to_vec(&identity.nullifier.clone().unwrap()).unwrap()).unwrap();
+            nullifier_file
+                .write(&serde_json::to_vec(&identity.nullifier.clone().unwrap()).unwrap())
+                .unwrap();
 
             let mut signer = GpgSigner {
                 secret_key_asc_path: Some(PathBuf::from(private_key_path)),

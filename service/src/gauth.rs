@@ -3,8 +3,7 @@
 // todo: refactor this into a proper Cli struct
 use crate::constants::GIT_GPG_URL;
 use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, USER_AGENT};
-use serde_json::{Result, Value};
-use std::env;
+use serde_json::Value;
 
 pub async fn query_user_gpg_keys(username: String) -> Value {
     let client = reqwest::Client::new();

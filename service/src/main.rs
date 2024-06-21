@@ -4,15 +4,13 @@
 mod constants;
 pub mod gauth;
 use axum::{
-    body::Body,
     response::IntoResponse,
     routing::{get, post},
     Extension, Json, Router,
 };
 use gauth::{query_user_gpg_keys, raw_gpg_keys};
 use reqwest::StatusCode;
-use risc0_zkvm::{guest::sha::Impl, Receipt};
-use serde_json::Value;
+use risc0_zkvm::Receipt;
 use std::env;
 use std::{collections::HashSet, sync::Arc};
 // registers voters / inserts new identities into the tree
@@ -23,10 +21,10 @@ use std::{collections::HashSet, sync::Arc};
 use client::types::IdentityPayload;
 use crypto::{gpg::GpgSigner, identity::Identity};
 use pgp::types::Mpi;
-use risc0_prover::{prover::prove_default, verifier::verify_vote};
+use risc0_prover::verifier::verify_vote;
 use tokio::sync::Mutex;
 use voting_tree::{crypto::hash_bytes, VotingTree};
-use zk_associated::storage::{InMemoryTreeState, Snapshot};
+use zk_associated::storage::InMemoryTreeState;
 
 type GitHubUser = String;
 #[derive(Clone)]
@@ -152,7 +150,8 @@ async fn register(
         )
         .await;
     let snapshot_serialized: Vec<u8> =
-        serde_json::to_vec(&state.lock().await.tree_state.voting_tree.clone()).expect("Failed to serialize snapshot");
+        serde_json::to_vec(&state.lock().await.tree_state.voting_tree.clone())
+            .expect("Failed to serialize snapshot");
     (StatusCode::OK, snapshot_serialized)
 }
 
@@ -161,10 +160,9 @@ async fn vote(
     Json(payload): Json<Receipt>,
 ) -> impl IntoResponse {
     let is_valid: bool = verify_vote(payload, state.lock().await.tree_state.root_history.clone());
-    if is_valid{
+    if is_valid {
         println!("Accepted: Valid vote!");
-    }
-    else{
+    } else {
         println!("Rejected: Invalid vote!");
     }
     (StatusCode::OK, format!("Is Valid: {}", is_valid))
@@ -173,6 +171,7 @@ async fn vote(
 #[tokio::test]
 async fn submit_zk_vote() {
     use crypto::identity::UniqueIdentity;
+    use risc0_prover::prover::prove_default;
     use risc0_types::CircuitInputs;
     use risc0_zkvm::Receipt;
     use std::{collections::HashSet, fs, path::PathBuf};
@@ -180,7 +179,7 @@ async fn submit_zk_vote() {
     // process a registration request using the default keypair in ~/resources/test/
     // generate a vote proof
     // verify the vote proof and apply the vote to tree_state
-    let mut tree_state: InMemoryTreeState = default_tree_state();
+    let tree_state: InMemoryTreeState = default_tree_state();
     let mut service_state: ServiceState = ServiceState {
         github_users: HashSet::new(),
         tree_state,
