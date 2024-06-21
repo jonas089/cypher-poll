@@ -1,5 +1,5 @@
+use serde::{Deserialize, Serialize};
 use voting_tree::VotingTree;
-use serde::{Serialize, Deserialize};
 #[derive(Serialize, Deserialize)]
 pub struct CircuitInputs {
     pub root_history: Vec<Vec<u8>>,

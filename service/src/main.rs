@@ -1,24 +1,29 @@
 // responsible for maintaining state
 // accepts proof payloads (Routes)
 // verifies proofs
-pub mod gauth;
 mod constants;
-use std::env;
+pub mod gauth;
 use gauth::{query_user_gpg_keys, raw_gpg_keys};
-use std::{collections::HashSet, fs, path::{Path, PathBuf}};
+use risc0_prover::{prover::prove_default, verifier::verify_vote};
+use std::env;
+use std::{
+    collections::HashSet,
+    fs,
+    path::{Path, PathBuf},
+};
 // registers voters / inserts new identities into the tree
 // if the signature is valid
 // if the account is unique
 // if the public key corresponds to the associated github keys
 // for the user
-use zk_associated::{
-    storage::{InMemoryTreeState, Snapshot},
+use crypto::{
+    gpg::GpgSigner,
+    identity::{self, Identity, Nullifier, UniqueIdentity},
 };
-use crypto::{gpg::GpgSigner, identity::{self, Identity, Nullifier, UniqueIdentity}};
 use pgp::{types::Mpi, SignedPublicKey};
-use risc0_prover::{prover::prove_default, verifier::verify_vote};
 use risc0_zkvm::Receipt;
 use voting_tree::{crypto::hash_bytes, VotingTree};
+use zk_associated::storage::{InMemoryTreeState, Snapshot};
 type GitHubUser = String;
 struct ServiceState {
     github_users: HashSet<GitHubUser>,
@@ -44,7 +49,8 @@ impl ServiceState {
         };
         signer.init_verifier();
         // verify that the key exists in the Username's Raw Key List
-        let raw_gpg_keys: Vec<String> = raw_gpg_keys(&query_user_gpg_keys(env::var("GITHUB_TOKEN").unwrap()).await);
+        let raw_gpg_keys: Vec<String> =
+            raw_gpg_keys(&query_user_gpg_keys(env::var("GITHUB_TOKEN").unwrap()).await);
         assert!(raw_gpg_keys.contains(&signer.public_key_asc_string.clone().unwrap()));
         assert!(signer.is_valid_signature(signature, &data));
         if self.github_users.get(&username).is_some() {
@@ -92,28 +98,23 @@ async fn submit_zk_vote() {
     // generate a vote proof
     // verify the vote proof and apply the vote to tree_state
     let mut tree_state: InMemoryTreeState = default_tree_state();
-    let mut service_state: ServiceState = ServiceState{
-        github_users: HashSet::new()
+    let mut service_state: ServiceState = ServiceState {
+        github_users: HashSet::new(),
     };
-    let mut identity: UniqueIdentity = UniqueIdentity{
+    let mut identity: UniqueIdentity = UniqueIdentity {
         identity: None,
-        nullifier: None
+        nullifier: None,
     };
     identity.generate_nullifier("I am a random seed, radnom!".to_string());
 
     let private_key_path_str = "/Users/chef/Desktop/cypher-poll/resources/test/key.sec.asc";
     let public_key_path_str = "/Users/chef/Desktop/cypher-poll/resources/test/key.asc";
-    let public_key_path: PathBuf = PathBuf::from(public_key_path_str);
 
-    let public_key_string: String = fs::read_to_string(
-        public_key_path_str
-    )
-    .expect("Failed to read public key");
+    let public_key_string: String =
+        fs::read_to_string(public_key_path_str).expect("Failed to read public key");
 
     let mut signer = GpgSigner {
-        secret_key_asc_path: Some(PathBuf::from(
-            private_key_path_str,
-        )),
+        secret_key_asc_path: Some(PathBuf::from(private_key_path_str)),
         public_key_asc_string: Some(public_key_string.clone()),
         signed_secret_key: None,
         signed_public_key: None,
@@ -121,21 +122,40 @@ async fn submit_zk_vote() {
     signer.init();
     let data: Vec<u8> = vec![0u8];
     let signature: Vec<Mpi> = signer.sign_bytes(&data);
-    assert!(signer.is_valid_signature(signature.clone(), &data));
-    // record snapshot
-    identity.compute_public_identity(signer.signed_public_key.unwrap());
-    // register the voter    
-    service_state.process_registration_request(signature, data, public_key_string.clone(), identity.identity.expect("Missing identity"), "jonas089".to_string(), &mut tree_state).await;
 
-    
+    let mut serialized_signature: Vec<Vec<u8>> = Vec::new();
+    for mpi in &signature {
+        serialized_signature.push(mpi.as_bytes().to_vec())
+    }
+
+    let mut deserialized_signature: Vec<Mpi> = Vec::new();
+    for series in &serialized_signature {
+        deserialized_signature.push(Mpi::from_slice(series))
+    }
+    assert_eq!(&signature, &deserialized_signature);
+
+    assert!(signer.is_valid_signature(signature.clone(), &data));
+    identity.compute_public_identity(signer.signed_public_key.unwrap());
+    // register the voter
+    service_state
+        .process_registration_request(
+            signature,
+            data,
+            public_key_string.clone(),
+            identity.identity.expect("Missing identity"),
+            "jonas089".to_string(),
+            &mut tree_state,
+        )
+        .await;
+
     // generate a proof -> redeem the nullifier
-    let proof: Receipt = prove_default(CircuitInputs{
+    let proof: Receipt = prove_default(CircuitInputs {
         root_history: tree_state.root_history.clone(),
         snapshot: tree_state.voting_tree.clone(),
         nullifier: identity.nullifier.clone().expect("Missing Nullifier"),
-        public_key_string: public_key_string.clone()
+        public_key_string: public_key_string.clone(),
     });
-    
-    let is_valid = verify_vote(proof, tree_state.root_history.clone());
+
+    let is_valid: bool = verify_vote(proof, tree_state.root_history.clone());
     assert!(is_valid)
 }

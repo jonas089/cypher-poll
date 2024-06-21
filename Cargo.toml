@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["service", "crypto", "zk-associated", "voting-tree", "risc0-types", "risc0-prover"]
+members = ["service", "crypto", "zk-associated", "voting-tree", "risc0-types", "risc0-prover", "client"]
 
 [profile.dev]
 opt-level = 3
