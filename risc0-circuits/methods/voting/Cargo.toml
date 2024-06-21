@@ -8,5 +8,5 @@ edition = "2021"
 [dependencies]
 # If you want to try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
 risc0-zkvm = { version = "0.21.0", default-features = false, features=["std"] }
-client = {path="../../../client"}
+zk-associated = {path="../../../zk-associated"}
 risc0-types = {path="../../../risc0-types"}

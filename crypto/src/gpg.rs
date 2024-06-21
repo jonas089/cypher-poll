@@ -3,7 +3,6 @@ use pgp::{
     Deserializable, SignedPublicKey, SignedSecretKey,
 };
 use std::{fs, path::PathBuf};
-
 pub struct GpgSigner {
     pub secret_key_asc_path: Option<PathBuf>,
     pub public_key_asc_string: Option<String>,

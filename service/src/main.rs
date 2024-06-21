@@ -1,6 +1,7 @@
 // responsible for maintaining state
 // accepts proof payloads (Routes)
 // verifies proofs
+pub mod gauth;
 
 use std::{collections::HashSet, fs, path::{Path, PathBuf}};
 // registers voters / inserts new identities into the tree
@@ -8,7 +9,7 @@ use std::{collections::HashSet, fs, path::{Path, PathBuf}};
 // if the account is unique
 // if the public key corresponds to the associated github keys
 // for the user
-use client::{
+use zk_associated::{
     storage::{InMemoryTreeState, Snapshot},
 };
 use crypto::{gpg::GpgSigner, identity::{self, Identity, Nullifier, UniqueIdentity}};
@@ -17,7 +18,6 @@ use risc0_prover::{prover::prove_default, verifier::verify_vote};
 use risc0_zkvm::Receipt;
 use voting_tree::{crypto::hash_bytes, VotingTree};
 type GitHubUser = String;
-
 struct ServiceState {
     github_users: HashSet<GitHubUser>,
 }
