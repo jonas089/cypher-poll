@@ -3,7 +3,8 @@
 // verifies proofs
 pub mod gauth;
 mod constants;
-
+use std::env;
+use gauth::{query_user_gpg_keys, raw_gpg_keys};
 use std::{collections::HashSet, fs, path::{Path, PathBuf}};
 // registers voters / inserts new identities into the tree
 // if the signature is valid
@@ -26,7 +27,7 @@ impl ServiceState {
     // register a voter, takes a risc0 receipt as input (currently not prover-generic)
     // todo: check that the GPG key is actually in the list of the GitHub User's associated Keys
     // using the GitHub API
-    fn process_registration_request(
+    async fn process_registration_request(
         &mut self,
         signature: Vec<Mpi>,
         data: Vec<u8>,
@@ -42,8 +43,10 @@ impl ServiceState {
             signed_public_key: None,
         };
         signer.init_verifier();
+        // verify that the key exists in the Username's Raw Key List
+        let raw_gpg_keys: Vec<String> = raw_gpg_keys(&query_user_gpg_keys(env::var("GITHUB_TOKEN").unwrap()).await);
+        assert!(raw_gpg_keys.contains(&signer.public_key_asc_string.clone().unwrap()));
         assert!(signer.is_valid_signature(signature, &data));
-
         if self.github_users.get(&username).is_some() {
             panic!("GitHubUser is not unique")
         };
@@ -80,8 +83,8 @@ fn main() {
     // todo: initialize stateful Rest Server
 }
 
-#[test]
-fn submit_zk_vote() {
+#[tokio::test]
+async fn submit_zk_vote() {
     use risc0_prover::{prover, verifier};
     use risc0_types::{CircuitInputs, CircuitOutputs};
     // initialize tree_state and service_state
@@ -122,7 +125,7 @@ fn submit_zk_vote() {
     // record snapshot
     identity.compute_public_identity(signer.signed_public_key.unwrap());
     // register the voter    
-    service_state.process_registration_request(signature, data, public_key_string.clone(), identity.identity.expect("Missing identity"), "jonas089".to_string(), &mut tree_state);
+    service_state.process_registration_request(signature, data, public_key_string.clone(), identity.identity.expect("Missing identity"), "jonas089".to_string(), &mut tree_state).await;
 
     
     // generate a proof -> redeem the nullifier

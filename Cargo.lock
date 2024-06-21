@@ -3271,6 +3271,7 @@ dependencies = [
  "risc0-prover",
  "risc0-types",
  "risc0-zkvm",
+ "serde_json",
  "tokio",
  "voting-tree",
  "zk-associated",

@@ -13,3 +13,4 @@ risc0-types = {path="../risc0-types"}
 pgp = "0.13"
 reqwest = "0.12.5"
 tokio = {version="1.38", features=["full"]}
+serde_json = "1.0.1"
