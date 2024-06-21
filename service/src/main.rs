@@ -138,6 +138,7 @@ async fn register(
     for series in &payload.signature_serialized {
         deserialized_signature.push(Mpi::from_slice(series))
     }
+    state.lock().await.tree_state.voting_tree.add_leaf(payload.identity.clone());
     let snapshot: VotingTree = state
         .lock()
         .await
@@ -151,6 +152,7 @@ async fn register(
         .await;
     let snapshot_serialized: Vec<u8> =
         serde_json::to_vec(&snapshot).expect("Failed to serialize snapshot");
+    println!("Registration snapshot: {:?}", &snapshot);
     (StatusCode::OK, snapshot_serialized)
 }
 

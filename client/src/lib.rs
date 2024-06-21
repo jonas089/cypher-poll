@@ -114,6 +114,7 @@ pub fn run(cli: Cli) {
                 .send()
                 .expect("Failed to register");
             assert!(response.status().is_success());
+            // todo: read response data and store it
         }
         // voting requires the exact tree snapshot of the leaf
         Command::Vote { public_key_path } => {

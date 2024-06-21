@@ -1,0 +1,1 @@
+cargo run -p client register --data Hello --public-key-path /Users/chef/Desktop/cypher-poll/resources/test/key.asc --private-key-path /Users/chef/Desktop/cypher-poll/resources/test/key.sec.asc --random-seed World --username jonas089
