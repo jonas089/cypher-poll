@@ -49,3 +49,9 @@ export SNAPSHOT_PATH="/Users/chef/Desktop/cypher-poll/artifacts/snapshot"
 | `data` | `*-key-path` | `random-seed` | `username` |
 | --- | --- | --- | --- |
 | challenge to be signed with the gpg key | path to a gpg key encoded in .asc (ASCII) | seed used to generate a unique nullifier, must be random and kept secret | github username |
+
+## Screenshots
+### Registration Success
+![reg](https://github.com/jonas089/cypher-poll/blob/master/assets/register.png)
+### Voting Success
+![vote](https://github.com/jonas089/cypher-poll/blob/master/assets/vote.png)
