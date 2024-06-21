@@ -4,9 +4,7 @@
 mod constants;
 pub mod gauth;
 use axum::{
-    response::IntoResponse,
-    routing::{get, post},
-    Extension, Json, Router,
+    extract::DefaultBodyLimit, response::IntoResponse, routing::{get, post}, Extension, Json, Router
 };
 use gauth::{query_user_gpg_keys, raw_gpg_keys};
 use reqwest::StatusCode;
@@ -122,6 +120,7 @@ async fn main() {
         )
         .route("/register", post(register))
         .route("/vote", post(vote))
+        .layer(DefaultBodyLimit::max(10000000))
         .layer(Extension(shared_state));
     let listener = tokio::net::TcpListener::bind("127.0.0.1:8080")
         .await
@@ -158,7 +157,8 @@ async fn register(
 async fn vote(
     Extension(state): Extension<Arc<Mutex<ServiceState>>>,
     Json(payload): Json<Receipt>,
-) -> impl IntoResponse {
+) -> impl IntoResponse{
+    println!("Info: Verifying proof...");
     let is_valid: bool = verify_vote(payload, state.lock().await.tree_state.root_history.clone());
     if is_valid {
         println!("Accepted: Valid vote!");
@@ -229,7 +229,6 @@ async fn submit_zk_vote() {
             "jonas089".to_string(),
         )
         .await;
-    println!("Nullifier: {:?}", &identity.nullifier);
     // generate a proof -> redeem the nullifier
     let proof: Receipt = prove_default(CircuitInputs {
         root_history: service_state.tree_state.root_history.clone(),

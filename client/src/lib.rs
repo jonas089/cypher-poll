@@ -7,7 +7,7 @@ use std::{
     env,
     fs::{self, File},
     io::{Read, Write},
-    path::PathBuf,
+    path::PathBuf, time::Duration,
 };
 
 use clap::{Parser, Subcommand};
@@ -141,16 +141,19 @@ pub fn run(cli: Cli) {
                 nullifier,
                 public_key_string,
             });
-            let payload: Vec<u8> =
-                serde_json::to_vec(&proof).expect("Failed to serialize Risc0 receipt");
             // todo: submit payload to server
-            let client: Client = Client::new();
+            let client = Client::builder()
+                .timeout(Duration::from_secs(600))
+                .build()
+                .expect("Failed to create client");
             let response = client
                 .post("http://127.0.0.1:8080/vote")
-                .json(&payload)
+                .json(&proof)
                 .send()
                 .expect("Failed to submit proof");
-            assert!(response.status().is_success());
+            if !response.status().is_success(){
+                println!("Error: Response Status {}", &response.status())
+            }
         }
     }
 }
