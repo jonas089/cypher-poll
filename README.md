@@ -29,8 +29,14 @@ cargo run -p client
 ```
 This will print all the available commands (`register`, `vote`)
 
-Example commands can be found in `scripts`, review them to make sure to change the user-specific inputs (`username`, `public-key-path`, `private-key-path`, `random-seed`, `data`).
+Example commands can be found in `scripts`, review them to make sure to change the user-specific inputs (`username`, `public-key-path`, `private-key-path`, `random-seed`, `data`). 
+
+The Client will write the `Nullifier` and `Snapshot` for the vote are to files, therefore environment variables must be present:
+```json
+export NULLIFIER_PATH="/Users/chef/Desktop/cypher-poll/artifacts/nullifier"
+export SNAPSHOT_PATH="/Users/chef/Desktop/cypher-poll/artifacts/snapshot"
+```
 
 | `data` | `*-key-path` | `random-seed` | `username` |
 | --- | --- | --- | --- |
-| `challenge to be signed with the gpg key` | `path to a gpg key encoded in .asc (ASCII)` | `seed used to generate a unique nullifier, must be random and kept secret` | `github username` |
+| challenge to be signed with the gpg key | path to a gpg key encoded in .asc (ASCII) | seed used to generate a unique nullifier, must be random and kept secret | github username |

@@ -158,7 +158,6 @@ async fn vote(
     Extension(state): Extension<Arc<Mutex<ServiceState>>>,
     Json(payload): Json<Receipt>,
 ) -> impl IntoResponse{
-    println!("Info: Verifying proof...");
     let is_valid: bool = verify_vote(payload, state.lock().await.tree_state.root_history.clone());
     if is_valid {
         println!("Accepted: Valid vote!");
