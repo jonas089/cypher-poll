@@ -6,7 +6,6 @@ risc0_zkvm::guest::entry!(main);
 
 
 fn main() {
-    let input: CircuitInputs = env::read();
-    
-    env::commit(&input);
+    let mut input: CircuitInputs = env::read();
+    env::commit(&prover_logic(&mut input));
 }

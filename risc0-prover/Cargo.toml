@@ -1,0 +1,10 @@
+[package]
+name = "risc0-prover"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+risc0-zkvm = { version = "0.21.0", default-features=false, features=["std", "prove"] }
+methods = {path="../risc0-circuits/methods"}
+risc0-types = {path="../risc0-types"}
