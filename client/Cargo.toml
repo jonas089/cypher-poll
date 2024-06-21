@@ -7,3 +7,5 @@ license.workspace = true
 [dependencies]
 kairos-delta-tree = {git="https://github.com/jonas089/kairos-delta-tree/"}
 crypto = {path="../crypto"}
+pgp = "0.13"
+serde = {version="1", features=["derive"]}

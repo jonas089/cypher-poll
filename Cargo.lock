@@ -277,6 +277,8 @@ version = "0.1.0"
 dependencies = [
  "crypto",
  "kairos-delta-tree",
+ "pgp",
+ "serde",
 ]
 
 [[package]]

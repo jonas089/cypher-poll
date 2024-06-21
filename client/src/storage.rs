@@ -3,7 +3,7 @@ use kairos_delta_tree::{KairosDeltaTree, crypto::hash_bytes};
 /// In production, this would live on a Blockchain
 /// a derivation of the tornadocash merkle tree
 /// to include nullifiers on-chain efficiently
-use crypto::identity::{self, Identity, Nullifier};
+use crypto::identity::{Identity, Nullifier};
 pub type TreeRoot = Vec<u8>;
 
 pub struct InMemoryTreeState{

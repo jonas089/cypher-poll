@@ -4,23 +4,39 @@
 
 // private inputs: tree snapshot, public key
 // public inputs/outputs: list of roots
-// public outputs: nullifier, vote
+// public outputs: nullifier
+use crypto::identity::{Identity, Nullifier, UniqueIdentity};
+use kairos_delta_tree::KairosDeltaTree;
+use pgp::SignedPublicKey;
+use crate::storage::TreeRoot;
+use serde::{Serialize, Deserialize};
+use super::merkle::compute_root;
 
+#[derive(Serialize, Deserialize)]
+pub struct CircuitOutputs{
+    pub nullifier: Nullifier,
+    pub root_history: Vec<TreeRoot>
+}
 
-/* Pseudocode
-    leaf = sha(nullifier, public_key);
+pub fn prover_logic(root_history: Vec<TreeRoot>, snapshot: &mut KairosDeltaTree, nullifier: Nullifier, public_key: SignedPublicKey) -> CircuitOutputs{
+    let mut uid = UniqueIdentity{
+        nullifier: Some(nullifier.clone()),
+        identity: None
+    };
+    uid.compute_public_identity(public_key);
+    let public_identity: Identity = uid.identity.unwrap();
+    let new_root: TreeRoot = compute_root(snapshot, public_identity);
+    // The verifier will have to check that the journal Root History
+    // matches its current Root History e.g. that all Roots contained
+    // in the journal's Root History are contained in the actual Root History
 
-    let root = merkle_proof(snapshot, leaf);
-    assert!(list_of_roots.contains(root));
-
-    journal.commit(
+    // Todo: Make Root History a HashMap / HashSet => especially important
+    // when developing an on-chain solution.
+    if !root_history.contains(&new_root){
+        panic!("Root is not contained in Root History")
+    };
+    CircuitOutputs{
         nullifier,
-        list_of_roots,
-        vote
-    );
-
-
-
-    If the proof is valid for the on-chain list_of_roots, then the vote can be accepted and the nullifier 
-    must be invalidated
-*/
+        root_history
+    }
+}
