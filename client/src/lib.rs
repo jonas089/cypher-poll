@@ -13,7 +13,7 @@ use std::{
 use clap::{builder::Str, Parser, Subcommand};
 use crypto::{
     gpg::GpgSigner,
-    identity::{Identity, UniqueIdentity},
+    identity::{Identity, Nullifier, UniqueIdentity},
 };
 use pgp::{from_bytes_many, ser::Serialize, types::Mpi};
 use reqwest::blocking::Client;
@@ -72,8 +72,8 @@ pub fn run(cli: Cli) {
             };
             identity.generate_nullifier(random_seed);
 
-            let mut file = File::create(env::var("NULLIFIER_PATH").unwrap()).unwrap();
-            file.write(&identity.nullifier.clone().unwrap()).unwrap();
+            let mut nullifier_file = File::create(env::var("NULLIFIER_PATH").unwrap()).unwrap();
+            nullifier_file.write(&serde_json::to_vec(&identity.nullifier.clone().unwrap()).unwrap()).unwrap();
 
             let mut signer = GpgSigner {
                 secret_key_asc_path: Some(PathBuf::from(private_key_path)),
@@ -114,23 +114,25 @@ pub fn run(cli: Cli) {
                 .send()
                 .expect("Failed to register");
             assert!(response.status().is_success());
-            // todo: read response data and store it
+            let mut snapshot_file = File::create(env::var("SNAPSHOT_PATH").unwrap()).unwrap();
+            snapshot_file.write(&response.bytes().unwrap()).unwrap();
         }
         // voting requires the exact tree snapshot of the leaf
         Command::Vote { public_key_path } => {
             let snapshot_path: PathBuf = PathBuf::from(env::var("SNAPSHOT_PATH").unwrap());
             let nullifier_path: PathBuf = PathBuf::from(env::var("NULLIFIER_PATH").unwrap());
             let mut snapshot_file = File::open(snapshot_path).unwrap();
-            let mut encoded_snapshot: Vec<u8> = Vec::new();
-            snapshot_file.read(&mut encoded_snapshot).unwrap();
-            let snapshot: VotingTree = serde_json::from_slice(&encoded_snapshot).unwrap();
+            let mut snapshot_json = String::new();
+            snapshot_file.read_to_string(&mut snapshot_json).unwrap();
+            let snapshot: VotingTree = serde_json::from_str(&snapshot_json).unwrap();
             let root_history: Vec<Vec<u8>> =
                 vec![snapshot.root.clone().expect("Snapshot has no root")];
             let public_key_string: String =
                 fs::read_to_string(public_key_path).expect("Failed to read public key");
             let mut nullifier_file = File::open(nullifier_path).unwrap();
-            let mut nullifier: Vec<u8> = Vec::new();
-            nullifier_file.read(&mut nullifier).unwrap();
+            let mut nullifier_json = String::new();
+            nullifier_file.read_to_string(&mut nullifier_json).unwrap();
+            let nullifier: Nullifier = serde_json::from_str(&mut nullifier_json).unwrap();
             let proof: Receipt = prove_default(CircuitInputs {
                 root_history,
                 snapshot,

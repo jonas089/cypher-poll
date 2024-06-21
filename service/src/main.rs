@@ -45,7 +45,7 @@ impl ServiceState {
         public_key: String,
         identity: Identity,
         username: GitHubUser,
-    ) -> Snapshot {
+    ) {
         let mut signer = GpgSigner {
             secret_key_asc_path: None,
             public_key_asc_string: Some(public_key),
@@ -59,10 +59,11 @@ impl ServiceState {
         assert!(raw_gpg_keys.contains(&signer.public_key_asc_string.clone().unwrap()));
         assert!(signer.is_valid_signature(signature, &data));
         if self.github_users.get(&username).is_some() {
-            panic!("GitHubUser is not unique")
+            panic!("Rejected: Duplicate Github User")
         };
-        self.github_users.insert(username);
-        self.tree_state.insert_nullifier(identity)
+        self.github_users.insert(username.clone());
+        self.tree_state.insert_nullifier(identity);
+        println!("Accepted: Github@{:?}", &username)
     }
 }
 
@@ -108,7 +109,7 @@ async fn main() {
     "#
     );
     let tree_state: InMemoryTreeState = default_tree_state();
-    let mut service_state: ServiceState = ServiceState {
+    let service_state: ServiceState = ServiceState {
         github_users: HashSet::new(),
         tree_state,
     };
@@ -117,7 +118,7 @@ async fn main() {
         .route(
             "/ping",
             get({
-                let shared_state = Arc::clone(&shared_state);
+                //let shared_state = Arc::clone(&shared_state);
                 move || ping()
             }),
         )
@@ -138,21 +139,20 @@ async fn register(
     for series in &payload.signature_serialized {
         deserialized_signature.push(Mpi::from_slice(series))
     }
-    state.lock().await.tree_state.voting_tree.add_leaf(payload.identity.clone());
-    let snapshot: VotingTree = state
+    //state.lock().await.tree_state.voting_tree.add_leaf(payload.identity.clone());
+    state
         .lock()
         .await
         .process_registration_request(
             deserialized_signature,
             payload.data_serialized,
             payload.public_key_string,
-            payload.identity,
+            payload.identity.clone(),
             payload.username,
         )
         .await;
     let snapshot_serialized: Vec<u8> =
-        serde_json::to_vec(&snapshot).expect("Failed to serialize snapshot");
-    println!("Registration snapshot: {:?}", &snapshot);
+        serde_json::to_vec(&state.lock().await.tree_state.voting_tree.clone()).expect("Failed to serialize snapshot");
     (StatusCode::OK, snapshot_serialized)
 }
 
@@ -161,7 +161,13 @@ async fn vote(
     Json(payload): Json<Receipt>,
 ) -> impl IntoResponse {
     let is_valid: bool = verify_vote(payload, state.lock().await.tree_state.root_history.clone());
-    (StatusCode::OK, format!("Is Valid: {}", is_valid));
+    if is_valid{
+        println!("Accepted: Valid vote!");
+    }
+    else{
+        println!("Rejected: Invalid vote!");
+    }
+    (StatusCode::OK, format!("Is Valid: {}", is_valid))
 }
 
 #[tokio::test]
@@ -183,7 +189,7 @@ async fn submit_zk_vote() {
         identity: None,
         nullifier: None,
     };
-    identity.generate_nullifier("I am a random seed, radnom!".to_string());
+    identity.generate_nullifier("Hello".to_string());
 
     let private_key_path_str = "/Users/chef/Desktop/cypher-poll/resources/test/key.sec.asc";
     let public_key_path_str = "/Users/chef/Desktop/cypher-poll/resources/test/key.asc";
@@ -220,11 +226,11 @@ async fn submit_zk_vote() {
             signature,
             data,
             public_key_string.clone(),
-            identity.identity.expect("Missing identity"),
+            identity.identity.clone().expect("Missing identity"),
             "jonas089".to_string(),
         )
         .await;
-
+    println!("Nullifier: {:?}", &identity.nullifier);
     // generate a proof -> redeem the nullifier
     let proof: Receipt = prove_default(CircuitInputs {
         root_history: service_state.tree_state.root_history.clone(),
@@ -232,7 +238,6 @@ async fn submit_zk_vote() {
         nullifier: identity.nullifier.clone().expect("Missing Nullifier"),
         public_key_string: public_key_string.clone(),
     });
-
     let is_valid: bool = verify_vote(proof, service_state.tree_state.root_history.clone());
     assert!(is_valid)
 }
