@@ -772,7 +772,6 @@ checksum = "4b82cf0babdbd58558212896d1a4272303a57bdb245c2bf1147185fb45640e70"
 name = "client"
 version = "0.1.0"
 dependencies = [
- "bincode",
  "clap",
  "crypto",
  "pgp",
@@ -781,6 +780,7 @@ dependencies = [
  "risc0-types",
  "risc0-zkvm",
  "serde",
+ "serde_json",
  "tokio",
  "voting-tree",
 ]

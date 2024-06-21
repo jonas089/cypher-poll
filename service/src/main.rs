@@ -3,8 +3,11 @@
 // verifies proofs
 mod constants;
 pub mod gauth;
-use axum::{routing::{get, post}, Router};
+use axum::{body::Body, routing::{get, post}, Extension, Json, Router, response::IntoResponse};
 use gauth::{query_user_gpg_keys, raw_gpg_keys};
+use reqwest::StatusCode;
+use risc0_zkvm::{guest::sha::Impl, Receipt};
+use serde_json::Value;
 use std::{collections::HashSet, sync::Arc};
 use std::env;
 // registers voters / inserts new identities into the tree
@@ -18,6 +21,7 @@ use pgp::types::Mpi;
 use risc0_prover::{prover::prove_default, verifier::verify_vote};
 use voting_tree::{crypto::hash_bytes, VotingTree};
 use zk_associated::storage::{InMemoryTreeState, Snapshot};
+use tokio::sync::Mutex;
 
 type GitHubUser = String;
 #[derive(Clone)]
@@ -104,7 +108,7 @@ async fn main() {
         github_users: HashSet::new(),
         tree_state
     };
-    let shared_state = Arc::new(service_state);
+    let shared_state = Arc::new(Mutex::new(service_state));
     let app = Router::new()
     .route(
         "/ping",
@@ -112,9 +116,33 @@ async fn main() {
             let shared_state = Arc::clone(&shared_state);
             move || ping()
         }),
-    );
+    )
+    .route(
+        "/register",
+        post(register),
+    )
+    .route(
+        "/vote",
+        post(vote),
+    )
+    .layer(Extension(shared_state));
     let listener = tokio::net::TcpListener::bind("127.0.0.1:8080").await.unwrap();
     axum::serve(listener, app).await.unwrap();
+}
+
+async fn register(Extension(state): Extension<Arc<Mutex<ServiceState>>>, Json(payload): Json<IdentityPayload>) -> impl IntoResponse {
+    let mut deserialized_signature: Vec<Mpi> = Vec::new();
+    for series in &payload.signature_serialized {
+        deserialized_signature.push(Mpi::from_slice(series))
+    };
+    let snapshot: VotingTree = state.lock().await.process_registration_request(deserialized_signature, payload.data_serialized, payload.public_key_string, payload.identity, payload.username).await;
+    let snapshot_serialized: Vec<u8> = serde_json::to_vec(&snapshot).expect("Failed to serialize snapshot");
+    (StatusCode::OK, snapshot_serialized)
+}
+
+async fn vote(Extension(state): Extension<Arc<Mutex<ServiceState>>>, Json(payload): Json<Receipt>) -> impl IntoResponse{
+    let is_valid: bool = verify_vote(payload, state.lock().await.tree_state.root_history.clone());
+    (StatusCode::OK, format!("Is Valid: {}", is_valid));
 }
 
 #[tokio::test]

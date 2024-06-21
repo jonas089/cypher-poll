@@ -5,7 +5,6 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-bincode = "1.3"
 clap = { version = "4", features = ["derive"] }
 risc0-zkvm = { version = "0.21.0", default-features = false }
 risc0-prover = {path="../risc0-prover"}
@@ -16,3 +15,4 @@ reqwest = "0.12.5"
 tokio = {version="1.38", features=["full"]}
 serde = {version="1", features=["derive"]}
 voting-tree = {path="../voting-tree"}
+serde_json="1.0.1"

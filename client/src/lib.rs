@@ -21,6 +21,7 @@ use risc0_types::CircuitInputs;
 use risc0_zkvm::Receipt;
 use types::IdentityPayload;
 use voting_tree::VotingTree;
+use serde_json;
 pub mod types;
 
 #[derive(Parser)]
@@ -113,7 +114,7 @@ pub fn run(cli: Cli) {
             let mut snapshot_file = File::open(snapshot_path).unwrap();
             let mut encoded_snapshot: Vec<u8> = Vec::new();
             snapshot_file.read(&mut encoded_snapshot).unwrap();
-            let snapshot: VotingTree = bincode::deserialize(&encoded_snapshot).unwrap();
+            let snapshot: VotingTree = serde_json::from_slice(&encoded_snapshot).unwrap();
             let root_history: Vec<Vec<u8>> =
                 vec![snapshot.root.clone().expect("Snapshot has no root")];
             let public_key_string: String =
@@ -128,7 +129,7 @@ pub fn run(cli: Cli) {
                 public_key_string,
             });
             let payload: Vec<u8> =
-                bincode::serialize(&proof).expect("Failed to serialize Risc0 receipt");
+                serde_json::to_vec(&proof).expect("Failed to serialize Risc0 receipt");
             // todo: submit payload to server
         }
     }
