@@ -29,14 +29,14 @@ impl ServiceState {
         &mut self,
         signature: Vec<Mpi>,
         data: Vec<u8>,
-        public_key: PathBuf,
+        public_key: String,
         identity: Identity,
         username: GitHubUser,
         tree_state: &mut InMemoryTreeState,
     ) -> Snapshot {
         let mut signer = GpgSigner {
             secret_key_asc_path: None,
-            public_key_asc_path: Some(public_key),
+            public_key_asc_string: Some(public_key),
             signed_secret_key: None,
             signed_public_key: None,
         };
@@ -99,40 +99,37 @@ fn submit_zk_vote() {
 
     let private_key_path_str = "/Users/chef/Desktop/cypher-poll/resources/test/key.sec.asc";
     let public_key_path_str = "/Users/chef/Desktop/cypher-poll/resources/test/key.asc";
-    
-    /*let public_key_string: String = fs::read_to_string(
-        public_key_path
+    let public_key_path: PathBuf = PathBuf::from(public_key_path_str);
+
+    let public_key_string: String = fs::read_to_string(
+        public_key_path_str
     )
-    .expect("Failed to read public key");*/
+    .expect("Failed to read public key");
 
     let mut signer = GpgSigner {
         secret_key_asc_path: Some(PathBuf::from(
             private_key_path_str,
         )),
-        public_key_asc_path: Some(PathBuf::from(
-            public_key_path_str
-        )),
+        public_key_asc_string: Some(public_key_string.clone()),
         signed_secret_key: None,
         signed_public_key: None,
     };
-    let public_key_path: PathBuf = signer.public_key_asc_path.clone().expect("Missing public key path");
     signer.init();
     let data: Vec<u8> = vec![0u8];
     let signature: Vec<Mpi> = signer.sign_bytes(&data);
     assert!(signer.is_valid_signature(signature.clone(), &data));
     // record snapshot
-    let snapshot: VotingTree = tree_state.voting_tree.clone();
     identity.compute_public_identity(signer.signed_public_key.unwrap());
     // register the voter    
-    service_state.process_registration_request(signature, data, public_key_path.clone(), identity.identity.expect("Missing identity"), "jonas089".to_string(), &mut tree_state);
+    service_state.process_registration_request(signature, data, public_key_string.clone(), identity.identity.expect("Missing identity"), "jonas089".to_string(), &mut tree_state);
 
     
     // generate a proof -> redeem the nullifier
     let proof: Receipt = prove_default(CircuitInputs{
         root_history: tree_state.root_history.clone(),
-        snapshot,
+        snapshot: tree_state.voting_tree.clone(),
         nullifier: identity.nullifier.clone().expect("Missing Nullifier"),
-        public_key_path
+        public_key_string: public_key_string.clone()
     });
     
     let is_valid = verify_vote(proof, tree_state.root_history.clone());

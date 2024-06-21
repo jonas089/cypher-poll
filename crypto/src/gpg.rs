@@ -6,7 +6,7 @@ use std::{fs, path::PathBuf};
 
 pub struct GpgSigner {
     pub secret_key_asc_path: Option<PathBuf>,
-    pub public_key_asc_path: Option<PathBuf>,
+    pub public_key_asc_string: Option<String>,
 
     // initialize with None, call init()
     pub signed_secret_key: Option<SignedSecretKey>,
@@ -25,14 +25,7 @@ impl GpgSigner {
         .expect("Failed to read secret key");
         self.signed_secret_key = Some(SignedSecretKey::from_string(&secret_key_string).unwrap().0);
         // import public key from file
-        let public_key_string: String = fs::read_to_string(
-            &self
-                .public_key_asc_path
-                .as_ref()
-                .expect("Missing secret key path"),
-        )
-        .expect("Failed to read public key");
-        self.signed_public_key = Some(SignedPublicKey::from_string(&public_key_string).unwrap().0);
+        self.signed_public_key = Some(SignedPublicKey::from_string(&self.public_key_asc_string.as_ref().expect("Must have public key string")).unwrap().0);
     }
     pub fn init_signer(&mut self) {
         // import private key from file
@@ -46,15 +39,7 @@ impl GpgSigner {
         self.signed_secret_key = Some(SignedSecretKey::from_string(&secret_key_string).unwrap().0);
     }
     pub fn init_verifier(&mut self) {
-        // import public key from file
-        let public_key_string: String = fs::read_to_string(
-            &self
-                .public_key_asc_path
-                .as_ref()
-                .expect("Missing secret key path"),
-        )
-        .expect("Failed to read public key");
-        self.signed_public_key = Some(SignedPublicKey::from_string(&public_key_string).unwrap().0);
+        self.signed_public_key = Some(SignedPublicKey::from_string(&self.public_key_asc_string.as_ref().expect("Must have public key string")).unwrap().0);
     }
     pub fn sign_bytes(&mut self, data: &[u8]) -> Vec<Mpi> {
         assert!(self.signed_secret_key.is_some());
@@ -83,13 +68,17 @@ impl GpgSigner {
 
 #[test]
 fn test() {
+    use std::fs;
+    let public_key_asc_path: PathBuf = PathBuf::from("/Users/chef/Desktop/cypher-poll/resources/test/key.asc");
+    let public_key_string: String = fs::read_to_string(
+            public_key_asc_path
+    ).unwrap();
+
     let mut signer = GpgSigner {
         secret_key_asc_path: Some(PathBuf::from(
             "/Users/chef/Desktop/cypher-poll/resources/test/key.sec.asc",
         )),
-        public_key_asc_path: Some(PathBuf::from(
-            "/Users/chef/Desktop/cypher-poll/resources/test/key.asc",
-        )),
+        public_key_asc_string: Some(public_key_string),
         signed_secret_key: None,
         signed_public_key: None,
     };

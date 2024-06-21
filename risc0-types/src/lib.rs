@@ -7,7 +7,7 @@ pub struct CircuitInputs {
     pub root_history: Vec<Vec<u8>>,
     pub snapshot: VotingTree,
     pub nullifier: Vec<u8>,
-    pub public_key_path: PathBuf, // todo: serialize / deserialize pgp public key
+    pub public_key_string: String, // todo: serialize / deserialize pgp public key
 }
 
 #[derive(Serialize, Deserialize)]
