@@ -4,5 +4,5 @@ use crate::storage::TreeRoot;
 
 // compute a merkle root for an identity
 pub fn compute_root(snapshot: &mut VotingTree, leaf: Identity) -> TreeRoot{
-    snapshot.merkle_proof(leaf)
+    snapshot.compute_root(leaf)
 }

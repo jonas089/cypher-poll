@@ -38,7 +38,7 @@ impl VotingTree{
         self.root = Some(current_hash);
         self.index += 1;
     }
-    pub fn merkle_proof(&mut self, leaf: Vec<u8>) -> Vec<u8>{
+    pub fn compute_root(&mut self, leaf: Vec<u8>) -> Vec<u8>{
         let mut current_index = self.index - 1;
         let mut current_hash: Vec<u8> = leaf.clone();
         for i in 0..self.depth{
@@ -70,11 +70,11 @@ fn test_tree(){
     let leaf = vec![242, 69, 81, 38, 252, 95, 197, 129, 177, 105, 42, 137, 129, 73, 125, 148, 130, 204, 83, 82, 126, 104, 106, 71, 156, 96, 55, 233, 132, 103, 128, 11];
     let _ = tree.add_leaf(leaf.clone());
     let merkle_root: Option<Vec<u8>> = tree.root.clone();
-    assert_eq!(tree.merkle_proof(leaf.clone()), merkle_root.clone().unwrap());
+    assert_eq!(tree.compute_root(leaf.clone()), merkle_root.clone().unwrap());
     println!("First root: {:?}", &merkle_root.unwrap());
 
     let _ = tree.add_leaf(leaf.clone());
     let merkle_root = tree.root.clone();
-    assert_eq!(tree.merkle_proof(leaf.clone()), merkle_root.clone().unwrap());
+    assert_eq!(tree.compute_root(leaf.clone()), merkle_root.clone().unwrap());
     println!("Second root: {:?}", &merkle_root.unwrap());
 }
