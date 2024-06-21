@@ -36,9 +36,9 @@ pub enum Command {
     Register {
         #[arg(short, long)]
         data: String,
-        #[arg(short, long)]
+        #[arg(long)]
         public_key_path: String,
-        #[arg(short, long)]
+        #[arg(long)]
         private_key_path: String,
         #[arg(short, long)]
         random_seed: String,
