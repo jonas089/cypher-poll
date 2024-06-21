@@ -2,7 +2,7 @@
 // accepts proof payloads (Routes)
 // verifies proofs
 
-use std::collections::HashSet;
+use std::{collections::HashSet, path::PathBuf};
 // registers voters / inserts new identities into the tree
 // if the signature is valid
 // if the account is unique
@@ -11,10 +11,10 @@ use std::collections::HashSet;
 use client::{
     storage::{InMemoryTreeState, Snapshot},
 };
-use crypto::identity::{Identity, Nullifier};
+use crypto::{gpg::GpgSigner, identity::{self, Identity, Nullifier, UniqueIdentity}};
+use pgp::{types::Mpi, SignedPublicKey};
 use risc0_zkvm::Receipt;
 use voting_tree::{crypto::hash_bytes, VotingTree};
-
 type GitHubUser = String;
 
 struct ServiceState {
@@ -26,11 +26,22 @@ impl ServiceState {
     // using the GitHub API
     fn process_registration_request(
         &mut self,
-        proof: Receipt,
+        signature: Vec<Mpi>,
+        data: Vec<u8>,
+        public_key: PathBuf,
         identity: Identity,
         username: GitHubUser,
         tree_state: &mut InMemoryTreeState,
     ) -> Snapshot {
+        let mut signer = GpgSigner {
+            secret_key_asc_path: None,
+            public_key_asc_path: Some(public_key),
+            signed_secret_key: None,
+            signed_public_key: None,
+        };
+        signer.init_verifier();
+        assert!(signer.is_valid_signature(signature, &data));
+
         if self.github_users.get(&username).is_some() {
             panic!("GitHubUser is not unique")
         };
@@ -69,8 +80,42 @@ fn main() {
 
 #[test]
 fn submit_zk_vote() {
+    use risc0_prover::{prover, verifier};
+    use risc0_types::{CircuitInputs, CircuitOutputs};
     // initialize tree_state and service_state
     // process a registration request using the default keypair in ~/resources/test/
     // generate a vote proof
     // verify the vote proof and apply the vote to tree_state
+    let mut tree_state: InMemoryTreeState = default_tree_state();
+    let mut service_state: ServiceState = ServiceState{
+        github_users: HashSet::new()
+    };
+    let mut identity: UniqueIdentity = UniqueIdentity{
+        identity: None,
+        nullifier: None
+    };
+    identity.generate_nullifier("I am a random seed, radnom!".to_string());
+
+    let private_key_path_str = "/Users/chef/Desktop/cypher-poll/resources/test/key.sec.asc";
+    let public_key_path_str = "/Users/chef/Desktop/cypher-poll/resources/test/key.asc";
+
+    let mut signer = GpgSigner {
+        secret_key_asc_path: Some(PathBuf::from(
+            private_key_path_str,
+        )),
+        public_key_asc_path: Some(PathBuf::from(
+            public_key_path_str,
+        )),
+        signed_secret_key: None,
+        signed_public_key: None,
+    };
+    signer.init();
+    let data: Vec<u8> = vec![0u8];
+    let signature: Vec<Mpi> = signer.sign_bytes(&data);
+    assert!(signer.is_valid_signature(signature.clone(), &data));
+    identity.compute_public_identity(signer.signed_public_key.unwrap());
+    // register the voter
+    service_state.process_registration_request(signature, data, signer.public_key_asc_path.expect("Missing secret key path"), identity.identity.expect("Missing identity"), "jonas089".to_string(), &mut tree_state);
+    // submit a proof and vote
+    println!("Roots: {:?}", &tree_state.root_history);
 }

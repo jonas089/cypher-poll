@@ -8,3 +8,6 @@ client = {path="../client"}
 crypto = {path="../crypto"}
 voting-tree = {path="../voting-tree"}
 risc0-zkvm = { version = "0.21.0", default-features = false }
+risc0-prover = {path="../risc0-prover"}
+risc0-types = {path="../risc0-types"}
+pgp = "0.13"

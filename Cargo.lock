@@ -2881,6 +2881,9 @@ version = "0.1.0"
 dependencies = [
  "client",
  "crypto",
+ "pgp",
+ "risc0-prover",
+ "risc0-types",
  "risc0-zkvm",
  "voting-tree",
 ]
