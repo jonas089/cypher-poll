@@ -1,12 +1,9 @@
 [package]
-name = "client"
+name = "risc0-types"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [dependencies]
 voting-tree = {path="../voting-tree"}
-crypto = {path="../crypto"}
-pgp = "0.13"
-serde = {version="1", features=["derive"]}
-risc0-types = {path="../risc0-types"}
+serde={version="1", features=["derive"]}

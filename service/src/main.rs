@@ -10,7 +10,6 @@ use std::collections::HashSet;
 // for the user
 use client::{
     storage::{InMemoryTreeState, Snapshot},
-    verifier::verify_receipt,
 };
 use crypto::identity::{Identity, Nullifier};
 use risc0_zkvm::Receipt;

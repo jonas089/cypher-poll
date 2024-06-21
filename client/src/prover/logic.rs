@@ -3,7 +3,7 @@
 // that the merkle proof of that leaf is valid for one of the roots in a given list
 
 use std::path::PathBuf;
-
+use risc0_types::{CircuitInputs, CircuitOutputs};
 // private inputs: tree snapshot, public key
 // public inputs/outputs: list of roots
 // public outputs: nullifier
@@ -13,20 +13,6 @@ use crypto::gpg::GpgSigner;
 use crypto::identity::{Identity, Nullifier, UniqueIdentity};
 use serde::{Deserialize, Serialize};
 use voting_tree::VotingTree;
-
-#[derive(Serialize, Deserialize)]
-pub struct CircuitInputs {
-    pub root_history: Vec<TreeRoot>,
-    pub snapshot: VotingTree,
-    pub nullifier: Nullifier,
-    pub public_key_path: PathBuf, // todo: serialize / deserialize pgp public key
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct CircuitOutputs {
-    pub nullifier: Nullifier,
-    pub root_history: Vec<TreeRoot>,
-}
 
 pub fn prover_logic(inputs: &mut CircuitInputs) -> CircuitOutputs {
     let mut gpg_signer: GpgSigner = GpgSigner {
