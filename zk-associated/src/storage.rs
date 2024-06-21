@@ -7,6 +7,7 @@ use crypto::identity::{Identity, Nullifier};
 pub type TreeRoot = Vec<u8>;
 pub type Snapshot = VotingTree;
 
+#[derive(Clone)]
 pub struct InMemoryTreeState {
     pub root_history: Vec<TreeRoot>,
     pub used_nullifiers: Vec<Nullifier>,

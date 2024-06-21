@@ -3,8 +3,9 @@
 // verifies proofs
 mod constants;
 pub mod gauth;
+use axum::{routing::{get, post}, Router};
 use gauth::{query_user_gpg_keys, raw_gpg_keys};
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 use std::env;
 // registers voters / inserts new identities into the tree
 // if the signature is valid
@@ -19,6 +20,7 @@ use voting_tree::{crypto::hash_bytes, VotingTree};
 use zk_associated::storage::{InMemoryTreeState, Snapshot};
 
 type GitHubUser = String;
+#[derive(Clone)]
 struct ServiceState {
     github_users: HashSet<GitHubUser>,
     tree_state: InMemoryTreeState
@@ -77,7 +79,13 @@ fn default_tree_state() -> InMemoryTreeState {
     }
 }
 
-fn main() {
+// `&'static str` becomes a `200 OK` with `content-type: text/plain; charset=utf-8`
+async fn ping() -> &'static str {
+    "pong"
+}
+
+#[tokio::main]
+async fn main() {
     print!(
         r#"
     
@@ -90,11 +98,23 @@ fn main() {
 
     "#
     );
-    let mut tree_state: InMemoryTreeState =
+    let tree_state: InMemoryTreeState =
         InMemoryTreeState::new(Vec::new(), Vec::new(), Vec::new());
-    // todo: initialize stateful Rest Server
-    // server should have one route that accepts IdentityPayload -> calls process_registration_request and updates state
-    // and one route that accepts Receipt -> calls verify_vote and updates state
+    let mut service_state: ServiceState = ServiceState{
+        github_users: HashSet::new(),
+        tree_state
+    };
+    let shared_state = Arc::new(service_state);
+    let app = Router::new()
+    .route(
+        "/ping",
+        get({
+            let shared_state = Arc::clone(&shared_state);
+            move || ping()
+        }),
+    );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:8080").await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
 
 #[tokio::test]
