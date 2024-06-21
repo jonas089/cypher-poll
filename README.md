@@ -11,6 +11,12 @@ To issue a vote, the user must submit a zero knowledge proof that the `Nullifier
 
 If the proof is accepted, the vote is counted and the `Nullifier` is added to a list to ensure that it cannot be used again.
 
+## Specify Github API Token
+Example `.bashrc`:
+```bash
+export GITHUB_TOKEN="YOUR_API_TOKEN_WITH_PGP_READ_PERMISSION"
+```
+Click [here](https://github.com/settings/tokens) to generate an access token.
 ## Run the Server
 ```bash
 cargo run -p service
