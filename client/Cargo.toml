@@ -9,3 +9,4 @@ voting-tree = {path="../voting-tree"}
 crypto = {path="../crypto"}
 pgp = "0.13"
 serde = {version="1", features=["derive"]}
+risc0-zkvm = { version = "0.21.0", default-features = false }

@@ -5,6 +5,7 @@ use voting_tree::{crypto::hash_bytes, VotingTree};
 /// to include nullifiers on-chain efficiently
 use crypto::identity::{Identity, Nullifier};
 pub type TreeRoot = Vec<u8>;
+pub type Snapshot = VotingTree;
 
 pub struct InMemoryTreeState {
     pub root_history: Vec<TreeRoot>,
@@ -15,7 +16,6 @@ pub struct InMemoryTreeState {
 
 impl InMemoryTreeState {
     pub fn new(
-        &self,
         root_history: Vec<TreeRoot>,
         used_nullifiers: Vec<Nullifier>,
         leafs: Vec<Identity>,
@@ -41,7 +41,7 @@ impl InMemoryTreeState {
         }
     }
 
-    pub fn insert_nullifier(&mut self, identity: Identity) -> VotingTree {
+    pub fn insert_nullifier(&mut self, identity: Identity) -> Snapshot {
         // take a snapshot of the Tree before insertion
         let snapshot = self.voting_tree.clone();
         // append the real tree by a new identity

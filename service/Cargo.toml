@@ -7,3 +7,4 @@ edition = "2021"
 client = {path="../client"}
 crypto = {path="../crypto"}
 voting-tree = {path="../voting-tree"}
+risc0-zkvm = { version = "0.21.0", default-features = false }
