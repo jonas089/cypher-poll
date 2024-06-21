@@ -17,12 +17,20 @@ Example `.bashrc`:
 export GITHUB_TOKEN="YOUR_API_TOKEN_WITH_PGP_READ_PERMISSION"
 ```
 Click [here](https://github.com/settings/tokens) to generate an access token.
+
 ## Run the Server
 ```bash
 cargo run -p service
 ```
+
 ## Client Documentation
 ```bash
 cargo run -p client
 ```
 This will print all the available commands (`register`, `vote`)
+
+Example commands can be found in `scripts`, review them to make sure to change the user-specific inputs (`username`, `public-key-path`, `private-key-path`, `random-seed`, `data`).
+
+| `data` | `*-key-path` | `random-seed` | `username` |
+| --- | --- | --- | --- |
+| `challenge to be signed with the gpg key` | `path to a gpg key encoded in .asc (ASCII)` | `seed used to generate a unique nullifier, must be random and kept secret` | `github username` |
