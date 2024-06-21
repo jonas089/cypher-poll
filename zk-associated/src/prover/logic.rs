@@ -2,7 +2,6 @@
 // that Sha256(nullifier, public_key) is a leaf
 // that the merkle proof of that leaf is valid for one of the roots in a given list
 
-use std::path::PathBuf;
 use risc0_types::{CircuitInputs, CircuitOutputs};
 // private inputs: tree snapshot, public key
 // public inputs/outputs: list of roots
@@ -10,9 +9,7 @@ use risc0_types::{CircuitInputs, CircuitOutputs};
 use super::merkle::compute_root;
 use crate::storage::TreeRoot;
 use crypto::gpg::GpgSigner;
-use crypto::identity::{self, Identity, Nullifier, UniqueIdentity};
-use serde::{Deserialize, Serialize};
-use voting_tree::VotingTree;
+use crypto::identity::{Identity, UniqueIdentity};
 
 pub fn prover_logic(inputs: &mut CircuitInputs) -> CircuitOutputs {
     let mut gpg_signer: GpgSigner = GpgSigner {

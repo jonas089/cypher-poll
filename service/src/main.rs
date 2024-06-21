@@ -2,6 +2,7 @@
 // accepts proof payloads (Routes)
 // verifies proofs
 pub mod gauth;
+mod constants;
 
 use std::{collections::HashSet, fs, path::{Path, PathBuf}};
 // registers voters / inserts new identities into the tree

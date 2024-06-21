@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use voting_tree::VotingTree;
 use serde::{Serialize, Deserialize};
 #[derive(Serialize, Deserialize)]
