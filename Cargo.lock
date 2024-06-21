@@ -276,9 +276,9 @@ name = "client"
 version = "0.1.0"
 dependencies = [
  "crypto",
- "kairos-delta-tree",
  "pgp",
  "serde",
+ "voting-tree",
 ]
 
 [[package]]
@@ -797,18 +797,6 @@ dependencies = [
  "once_cell",
  "sha2",
  "signature",
-]
-
-[[package]]
-name = "kairos-delta-tree"
-version = "0.1.0"
-source = "git+https://github.com/jonas089/kairos-delta-tree/#88e6cb47b4e7aea60facfefb6b2c9564846ee5f5"
-dependencies = [
- "digest",
- "serde",
- "sha2",
- "sha256",
- "uint",
 ]
 
 [[package]]
@@ -1533,6 +1521,17 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
+
+[[package]]
+name = "voting-tree"
+version = "0.1.0"
+dependencies = [
+ "digest",
+ "serde",
+ "sha2",
+ "sha256",
+ "uint",
+]
 
 [[package]]
 name = "wasi"

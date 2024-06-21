@@ -8,8 +8,7 @@ use std::path::PathBuf;
 // public inputs/outputs: list of roots
 // public outputs: nullifier
 use crypto::identity::{Identity, Nullifier, UniqueIdentity};
-use kairos_delta_tree::KairosDeltaTree;
-use pgp::SignedPublicKey;
+use voting_tree::VotingTree;
 use crate::storage::TreeRoot;
 use serde::{Serialize, Deserialize};
 use super::merkle::compute_root;
@@ -18,7 +17,7 @@ use crypto::gpg::GpgSigner;
 #[derive(Serialize, Deserialize)]
 pub struct CircuitInputs{
     pub root_history: Vec<TreeRoot>,
-    pub snapshot: KairosDeltaTree,
+    pub snapshot: VotingTree,
     pub nullifier: Nullifier,
     pub public_key_path: PathBuf
     // todo: serialize / deserialize pgp public key

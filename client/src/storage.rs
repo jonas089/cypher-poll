@@ -1,4 +1,4 @@
-use kairos_delta_tree::{KairosDeltaTree, crypto::hash_bytes};
+use voting_tree::{VotingTree, crypto::hash_bytes};
 
 /// In production, this would live on a Blockchain
 /// a derivation of the tornadocash merkle tree
@@ -9,7 +9,7 @@ pub type TreeRoot = Vec<u8>;
 pub struct InMemoryTreeState{
     root_history: Vec<TreeRoot>,
     used_nullifiers: Vec<Nullifier>,
-    delta_tree: KairosDeltaTree,
+    delta_tree: VotingTree,
     leafs: Vec<Identity>
 }
 
@@ -17,7 +17,7 @@ impl InMemoryTreeState{
     pub fn new(&self, root_history: Vec<TreeRoot>, used_nullifiers: Vec<Nullifier>, leafs: Vec<Identity>) -> InMemoryTreeState{
 
         // todo: initialize fixed-size delta tree
-        let mut delta_tree: KairosDeltaTree = KairosDeltaTree{
+        let mut delta_tree: VotingTree = VotingTree{
             zero_node: hash_bytes(vec![0;32]),
             zero_levels: Vec::new(),
             // size must equal tree depth
@@ -38,7 +38,7 @@ impl InMemoryTreeState{
         }
     }
 
-    pub fn insert_nullifier(&mut self, identity: Identity) -> KairosDeltaTree{
+    pub fn insert_nullifier(&mut self, identity: Identity) -> VotingTree{
         // take a snapshot of the Tree before insertion
         let snapshot = self.delta_tree.clone();
         // append the real tree by a new identity

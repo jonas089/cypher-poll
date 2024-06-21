@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["service", "crypto", "client"]
+members = ["service", "crypto", "client", "voting-tree"]
 
 [profile.dev]
 opt-level = 3
