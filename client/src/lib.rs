@@ -16,12 +16,13 @@ use crypto::{
     identity::{Identity, UniqueIdentity},
 };
 use pgp::{from_bytes_many, ser::Serialize, types::Mpi};
+use reqwest::blocking::Client;
 use risc0_prover::prover::prove_default;
 use risc0_types::CircuitInputs;
 use risc0_zkvm::Receipt;
+use serde_json;
 use types::IdentityPayload;
 use voting_tree::VotingTree;
-use serde_json;
 pub mod types;
 
 #[derive(Parser)]
@@ -106,6 +107,13 @@ pub fn run(cli: Cli) {
             // should return a tree snapshot
             // should store that tree snapshot in the
             // designated file
+            let client: Client = Client::new();
+            let response = client
+                .post("http://127.0.0.1:8080/register")
+                .json(&payload)
+                .send()
+                .expect("Failed to register");
+            assert!(response.status().is_success());
         }
         // voting requires the exact tree snapshot of the leaf
         Command::Vote { public_key_path } => {
@@ -131,6 +139,13 @@ pub fn run(cli: Cli) {
             let payload: Vec<u8> =
                 serde_json::to_vec(&proof).expect("Failed to serialize Risc0 receipt");
             // todo: submit payload to server
+            let client: Client = Client::new();
+            let response = client
+                .post("http://127.0.0.1:8080/vote")
+                .json(&payload)
+                .send()
+                .expect("Failed to submit proof");
+            assert!(response.status().is_success());
         }
     }
 }

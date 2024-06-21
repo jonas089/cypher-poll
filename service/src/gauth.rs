@@ -1,9 +1,10 @@
 // GitHub authentication
 // should check the Github API for associated GPG keys and return them as a Vec
-use crate::constants::{GIT_GPG_URL};
+// todo: refactor this into a proper Cli struct
+use crate::constants::GIT_GPG_URL;
 use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, USER_AGENT};
 use serde_json::{Result, Value};
-use std::{env};
+use std::env;
 
 pub async fn query_user_gpg_keys(username: String) -> Value {
     let client = reqwest::Client::new();
@@ -54,9 +55,4 @@ pub fn raw_gpg_keys(json: &Value) -> Vec<String> {
         }
     }
     raw_keys
-}
-
-#[tokio::test]
-async fn test_query_gpg() {
-    let response = query_user_gpg_keys(env::var("GITHUB_TOKEN").unwrap()).await;
 }

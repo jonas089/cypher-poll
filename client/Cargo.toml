@@ -11,7 +11,7 @@ risc0-prover = {path="../risc0-prover"}
 risc0-types = {path="../risc0-types"}
 crypto = {path="../crypto"}
 pgp = "0.13"
-reqwest = "0.12.5"
+reqwest = {version="0.12.5", features=["blocking", "json"]}
 tokio = {version="1.38", features=["full"]}
 serde = {version="1", features=["derive"]}
 voting-tree = {path="../voting-tree"}
