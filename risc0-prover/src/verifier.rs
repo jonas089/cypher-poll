@@ -3,7 +3,7 @@ use risc0_types::CircuitOutputs;
 use risc0_zkvm::Receipt;
 use methods::VOTING_ID;
 
-pub fn verify_receipt(receipt: Receipt, root_history: Vec<Vec<u8>>) -> bool {
+pub fn verify_vote(receipt: Receipt, root_history: Vec<Vec<u8>>) -> bool {
     // expect valid proof
     receipt.verify(VOTING_ID).expect("Failed to verify proof");
     // decode journal and verify root_history

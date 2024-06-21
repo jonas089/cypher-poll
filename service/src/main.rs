@@ -2,7 +2,7 @@
 // accepts proof payloads (Routes)
 // verifies proofs
 
-use std::{collections::HashSet, path::PathBuf};
+use std::{collections::HashSet, fs, path::{Path, PathBuf}};
 // registers voters / inserts new identities into the tree
 // if the signature is valid
 // if the account is unique
@@ -13,6 +13,7 @@ use client::{
 };
 use crypto::{gpg::GpgSigner, identity::{self, Identity, Nullifier, UniqueIdentity}};
 use pgp::{types::Mpi, SignedPublicKey};
+use risc0_prover::{prover::prove_default, verifier::verify_vote};
 use risc0_zkvm::Receipt;
 use voting_tree::{crypto::hash_bytes, VotingTree};
 type GitHubUser = String;
@@ -98,24 +99,42 @@ fn submit_zk_vote() {
 
     let private_key_path_str = "/Users/chef/Desktop/cypher-poll/resources/test/key.sec.asc";
     let public_key_path_str = "/Users/chef/Desktop/cypher-poll/resources/test/key.asc";
+    
+    /*let public_key_string: String = fs::read_to_string(
+        public_key_path
+    )
+    .expect("Failed to read public key");*/
 
     let mut signer = GpgSigner {
         secret_key_asc_path: Some(PathBuf::from(
             private_key_path_str,
         )),
         public_key_asc_path: Some(PathBuf::from(
-            public_key_path_str,
+            public_key_path_str
         )),
         signed_secret_key: None,
         signed_public_key: None,
     };
+    let public_key_path: PathBuf = signer.public_key_asc_path.clone().expect("Missing public key path");
     signer.init();
     let data: Vec<u8> = vec![0u8];
     let signature: Vec<Mpi> = signer.sign_bytes(&data);
     assert!(signer.is_valid_signature(signature.clone(), &data));
+    // record snapshot
+    let snapshot: VotingTree = tree_state.voting_tree.clone();
     identity.compute_public_identity(signer.signed_public_key.unwrap());
-    // register the voter
-    service_state.process_registration_request(signature, data, signer.public_key_asc_path.expect("Missing secret key path"), identity.identity.expect("Missing identity"), "jonas089".to_string(), &mut tree_state);
-    // submit a proof and vote
-    println!("Roots: {:?}", &tree_state.root_history);
+    // register the voter    
+    service_state.process_registration_request(signature, data, public_key_path.clone(), identity.identity.expect("Missing identity"), "jonas089".to_string(), &mut tree_state);
+
+    
+    // generate a proof -> redeem the nullifier
+    let proof: Receipt = prove_default(CircuitInputs{
+        root_history: tree_state.root_history.clone(),
+        snapshot,
+        nullifier: identity.nullifier.clone().expect("Missing Nullifier"),
+        public_key_path
+    });
+    
+    let is_valid = verify_vote(proof, tree_state.root_history.clone());
+    assert!(is_valid)
 }
