@@ -32,10 +32,19 @@ This will print all the available commands (`register`, `vote`)
 Example commands can be found in `scripts`, review them to make sure to change the user-specific inputs (`username`, `public-key-path`, `private-key-path`, `random-seed`, `data`). 
 
 The Client will write the `Nullifier` and `Snapshot` for the vote are to files, therefore environment variables must be present:
-```json
+```bash
 export NULLIFIER_PATH="/Users/chef/Desktop/cypher-poll/artifacts/nullifier"
 export SNAPSHOT_PATH="/Users/chef/Desktop/cypher-poll/artifacts/snapshot"
 ```
+
+Complete `.bashrc`:
+```bash
+export GITHUB_TOKEN="YOUR_API_TOKEN_WITH_PGP_READ_PERMISSION"
+export NULLIFIER_PATH="/Users/chef/Desktop/cypher-poll/artifacts/nullifier"
+export SNAPSHOT_PATH="/Users/chef/Desktop/cypher-poll/artifacts/snapshot"
+```
+
+## Client Arguments Meaning
 
 | `data` | `*-key-path` | `random-seed` | `username` |
 | --- | --- | --- | --- |
