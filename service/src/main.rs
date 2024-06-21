@@ -16,6 +16,7 @@ use std::{
 // if the account is unique
 // if the public key corresponds to the associated github keys
 // for the user
+use client::types::IdentityPayload;
 use crypto::{
     gpg::GpgSigner,
     identity::{self, Identity, Nullifier, UniqueIdentity},
@@ -24,6 +25,7 @@ use pgp::{types::Mpi, SignedPublicKey};
 use risc0_zkvm::Receipt;
 use voting_tree::{crypto::hash_bytes, VotingTree};
 use zk_associated::storage::{InMemoryTreeState, Snapshot};
+
 type GitHubUser = String;
 struct ServiceState {
     github_users: HashSet<GitHubUser>,
@@ -84,9 +86,23 @@ fn default_tree_state() -> InMemoryTreeState {
 }
 
 fn main() {
+    print!(
+        r#"
+    
+███████ ██   ██      ██████ ██    ██ ██████  ██   ██ ███████ ██████  
+   ███  ██  ██      ██       ██  ██  ██   ██ ██   ██ ██      ██   ██ 
+  ███   █████       ██        ████   ██████  ███████ █████   ██████  
+ ███    ██  ██      ██         ██    ██      ██   ██ ██      ██   ██ 
+███████ ██   ██      ██████    ██    ██      ██   ██ ███████ ██   ██ 
+                                                                                                    
+
+    "#
+    );
     let mut tree_state: InMemoryTreeState =
         InMemoryTreeState::new(Vec::new(), Vec::new(), Vec::new());
     // todo: initialize stateful Rest Server
+    // server should have one route that accepts IdentityPayload -> calls process_registration_request and updates state
+    // and one route that accepts Receipt -> calls verify_vote and updates state
 }
 
 #[tokio::test]

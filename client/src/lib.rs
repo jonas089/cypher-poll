@@ -121,13 +121,14 @@ pub fn run(cli: Cli) {
             let mut nullifier_file = File::open(nullifier_path).unwrap();
             let mut nullifier: Vec<u8> = Vec::new();
             nullifier_file.read(&mut nullifier).unwrap();
-            let proof: Receipt = prove_default(CircuitInputs{
+            let proof: Receipt = prove_default(CircuitInputs {
                 root_history,
                 snapshot,
                 nullifier,
-                public_key_string
+                public_key_string,
             });
-            let payload: Vec<u8> = bincode::serialize(&proof).expect("Failed to serialize Risc0 receipt");
+            let payload: Vec<u8> =
+                bincode::serialize(&proof).expect("Failed to serialize Risc0 receipt");
             // todo: submit payload to server
         }
     }
