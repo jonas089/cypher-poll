@@ -12,6 +12,11 @@ To issue a vote, the user must submit a zero knowledge proof that the `Nullifier
 If the proof is accepted, the vote is counted and the `Nullifier` is added to a list to ensure that it cannot be used again.
 
 ## Run the Server
-
+```bash
+cargo run -p service
+```
 ## Client Documentation
-
+```bash
+cargo run -p client
+```
+This will print all the available commands (`register`, `vote`)
