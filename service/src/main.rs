@@ -180,7 +180,10 @@ async fn vote(
 #[tokio::test]
 async fn submit_zk_vote() {
     use crypto::identity::UniqueIdentity;
-    use risc0_prover::prover::prove_default;
+    #[cfg(not(feature = "groth16"))]
+    use risc0_prover::prover::prove_default as prover;
+    #[cfg(feature = "groth16")]
+    use risc0_prover::prover::prove_groth16 as prover;
     use risc0_types::CircuitInputs;
     use risc0_zkvm::Receipt;
     use std::{collections::HashSet, fs, path::PathBuf};
@@ -240,7 +243,7 @@ async fn submit_zk_vote() {
         )
         .await;
     // generate a proof -> redeem the nullifier
-    let proof: Receipt = prove_default(CircuitInputs {
+    let proof: Receipt = prover(CircuitInputs {
         root_history: service_state.tree_state.root_history.clone(),
         snapshot: service_state.tree_state.voting_tree.clone(),
         nullifier: identity.nullifier.clone().expect("Missing Nullifier"),

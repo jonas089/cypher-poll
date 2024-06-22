@@ -3081,6 +3081,7 @@ name = "risc0-prover"
 version = "0.1.0"
 dependencies = [
  "methods",
+ "risc0-groth16",
  "risc0-types",
  "risc0-zkvm",
 ]
