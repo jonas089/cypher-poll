@@ -1,6 +1,6 @@
 #![no_main]
 use risc0_zkvm::guest::env;
-use risc0_types::{CircuitInputs, CircuitOutputs};
+use risc0_types::CircuitInputs;
 use zk_associated::prover::logic::prover_logic;
 risc0_zkvm::guest::entry!(main);
 
