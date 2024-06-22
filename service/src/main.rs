@@ -9,10 +9,11 @@ use axum::{
     routing::{get, post},
     Extension, Json, Router,
 };
+use crossterm::{execute, terminal::Clear};
 use gauth::{query_user_gpg_keys, raw_gpg_keys};
 use reqwest::StatusCode;
 use risc0_zkvm::Receipt;
-use std::env;
+use std::{env, io};
 use std::{collections::HashSet, sync::Arc};
 // registers voters / inserts new identities into the tree
 // if the signature is valid
@@ -26,6 +27,7 @@ use risc0_prover::verifier::verify_vote;
 use tokio::sync::Mutex;
 use voting_tree::VotingTree;
 use zk_associated::storage::InMemoryTreeState;
+use colored::*;
 
 type GitHubUser = String;
 #[derive(Clone)]
@@ -59,11 +61,11 @@ impl ServiceState {
         assert!(raw_gpg_keys.contains(&signer.public_key_asc_string.clone().unwrap()));
         assert!(signer.is_valid_signature(signature, &data));
         if self.github_users.get(&username).is_some() {
-            panic!("Rejected: Duplicate Github User")
+            panic!("{}: Duplicate Github User", "Receted".red().bold())
         };
         self.github_users.insert(username.clone());
         self.tree_state.insert_nullifier(identity);
-        println!("Accepted: Github@{:?}", &username)
+        println!("{} {}: Github@{}", "+++++++++ \n".yellow(), "Accepted".bold().green(), &username.bold().green())
     }
 }
 
@@ -96,19 +98,19 @@ async fn ping() -> &'static str {
 
 #[tokio::main]
 async fn main() {
-    print!(
-        r#"
-    
+    let mut stdout = io::stdout();
+    execute!(stdout, Clear(crossterm::terminal::ClearType::All)).unwrap();
+    print!( "{}",
+r#"
  ██████╗██╗   ██╗██████╗ ██╗  ██╗███████╗██████╗     ██████╗  ██████╗ ██╗     ██╗     
 ██╔════╝╚██╗ ██╔╝██╔══██╗██║  ██║██╔════╝██╔══██╗    ██╔══██╗██╔═══██╗██║     ██║     
 ██║      ╚████╔╝ ██████╔╝███████║█████╗  ██████╔╝    ██████╔╝██║   ██║██║     ██║     
 ██║       ╚██╔╝  ██╔═══╝ ██╔══██║██╔══╝  ██╔══██╗    ██╔═══╝ ██║   ██║██║     ██║     
 ╚██████╗   ██║   ██║     ██║  ██║███████╗██║  ██║    ██║     ╚██████╔╝███████╗███████╗
  ╚═════╝   ╚═╝   ╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝    ╚═╝      ╚═════╝ ╚══════╝╚══════╝
-                                                                                                                 
-
-"#
+"#.red()
     );
+    println!("{}", " by Jonas Pauli, Casper Association ".bold().white().bold().on_red());
     let tree_state: InMemoryTreeState = default_tree_state();
     let service_state: ServiceState = ServiceState {
         github_users: HashSet::new(),
@@ -166,7 +168,7 @@ async fn vote(
 ) -> impl IntoResponse {
     let vote: String = verify_vote(payload, state.lock().await.tree_state.root_history.clone());
     state.lock().await.votes.push(vote.clone());
-    println!("Accepted: Anonymous User voted for {}", &vote);
+    println!("{} {}: Anonymous User voted for {}", "+++++++++ \n".yellow(), "Accepted".bold().green(), &vote.bold().red());
     println!(
         "Current State of the Election: {:?}",
         &state.lock().await.votes
