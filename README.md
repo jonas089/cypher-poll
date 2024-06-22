@@ -55,3 +55,7 @@ export SNAPSHOT_PATH="/Users/chef/Desktop/cypher-poll/artifacts/snapshot"
 ![reg](https://github.com/jonas089/cypher-poll/blob/master/assets/register.png)
 ### Voting Success
 ![vote](https://github.com/jonas089/cypher-poll/blob/master/assets/vote.png)
+
+
+## The vote argument
+The vote must be the same for both `register` and `vote`. With `vote` a leaf in the Tree is redeemed that was inserted during `register`. Trying to redeem an invalid vote will result in an error => an incorrect leaf.

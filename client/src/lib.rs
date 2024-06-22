@@ -46,13 +46,13 @@ pub enum Command {
         #[arg(short, long)]
         username: String,
         #[arg(short, long)]
-        vote: String
+        vote: String,
     },
     Vote {
         #[arg(short, long)]
         public_key_path: String,
         #[arg(short, long)]
-        vote: String
+        vote: String,
     },
 }
 
@@ -66,7 +66,7 @@ pub fn run(cli: Cli) {
             private_key_path,
             username,
             random_seed,
-            vote
+            vote,
         } => {
             // construct the serialized registration payload
             let public_key_string: String =
@@ -109,7 +109,7 @@ pub fn run(cli: Cli) {
                 signature_serialized,
                 public_key_string,
                 identity: public_identity,
-                username
+                username,
             };
             // todo: submit payload to server
             // should return a tree snapshot
@@ -126,7 +126,10 @@ pub fn run(cli: Cli) {
             snapshot_file.write(&response.bytes().unwrap()).unwrap();
         }
         // voting requires the exact tree snapshot of the leaf
-        Command::Vote { public_key_path, vote } => {
+        Command::Vote {
+            public_key_path,
+            vote,
+        } => {
             let snapshot_path: PathBuf = PathBuf::from(env::var("SNAPSHOT_PATH").unwrap());
             let nullifier_path: PathBuf = PathBuf::from(env::var("NULLIFIER_PATH").unwrap());
             let mut snapshot_file = File::open(snapshot_path).unwrap();

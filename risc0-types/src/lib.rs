@@ -13,5 +13,5 @@ pub struct CircuitInputs {
 pub struct CircuitOutputs {
     pub nullifier: Vec<u8>,
     pub root_history: Vec<Vec<u8>>,
-    pub vote: String
+    pub vote: String,
 }

@@ -32,7 +32,7 @@ type GitHubUser = String;
 struct ServiceState {
     github_users: HashSet<GitHubUser>,
     tree_state: InMemoryTreeState,
-    votes: Vec<String>
+    votes: Vec<String>,
 }
 impl ServiceState {
     // register a voter, takes a risc0 receipt as input (currently not prover-generic)
@@ -112,7 +112,7 @@ async fn main() {
     let service_state: ServiceState = ServiceState {
         github_users: HashSet::new(),
         tree_state,
-        votes: Vec::new()
+        votes: Vec::new(),
     };
     let shared_state = Arc::new(Mutex::new(service_state));
     let app = Router::new()
@@ -163,13 +163,17 @@ async fn vote(
     Extension(state): Extension<Arc<Mutex<ServiceState>>>,
     Json(payload): Json<Receipt>,
 ) -> impl IntoResponse {
-    let is_valid: bool = verify_vote(payload, state.lock().await.tree_state.root_history.clone());
-    if is_valid {
-        println!("Accepted: Valid vote!");
-    } else {
-        println!("Rejected: Invalid vote!");
-    }
-    (StatusCode::OK, format!("Is Valid: {}", is_valid))
+    let vote: String = verify_vote(payload, state.lock().await.tree_state.root_history.clone());
+    state.lock().await.votes.push(vote.clone());
+    println!("Accepted: Anonymous User voted for {}", &vote);
+    println!(
+        "Current State of the Election: {:?}",
+        &state.lock().await.votes
+    );
+    (
+        StatusCode::OK,
+        format!("Accepted: Anonymous User voted for {}", &vote),
+    )
 }
 
 #[tokio::test]
@@ -187,7 +191,7 @@ async fn submit_zk_vote() {
     let mut service_state: ServiceState = ServiceState {
         github_users: HashSet::new(),
         tree_state,
-        votes: Vec::new()
+        votes: Vec::new(),
     };
     let mut identity: UniqueIdentity = UniqueIdentity {
         identity: None,
@@ -242,6 +246,5 @@ async fn submit_zk_vote() {
         vote: "Overlord".to_string(),
         public_key_string: public_key_string.clone(),
     });
-    let is_valid: bool = verify_vote(proof, service_state.tree_state.root_history.clone());
-    assert!(is_valid)
+    verify_vote(proof, service_state.tree_state.root_history.clone());
 }
