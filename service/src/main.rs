@@ -106,7 +106,7 @@ async fn main() {
 ███████ ██   ██      ██████    ██    ██      ██   ██ ███████ ██   ██ 
                                                                                                     
 
-    "#
+"#
     );
     let tree_state: InMemoryTreeState = default_tree_state();
     let service_state: ServiceState = ServiceState {
