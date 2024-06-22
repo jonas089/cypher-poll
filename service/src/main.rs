@@ -4,7 +4,10 @@
 mod constants;
 pub mod gauth;
 use axum::{
-    extract::DefaultBodyLimit, response::IntoResponse, routing::{get, post}, Extension, Json, Router
+    extract::DefaultBodyLimit,
+    response::IntoResponse,
+    routing::{get, post},
+    Extension, Json, Router,
 };
 use gauth::{query_user_gpg_keys, raw_gpg_keys};
 use reqwest::StatusCode;
@@ -17,11 +20,11 @@ use std::{collections::HashSet, sync::Arc};
 // if the public key corresponds to the associated github keys
 // for the user
 use client::types::IdentityPayload;
-use crypto::{gpg::GpgSigner, identity::Identity};
+use crypto::{gpg::GpgSigner, hash, identity::Identity, CryptoHasherSha256};
 use pgp::types::Mpi;
 use risc0_prover::verifier::verify_vote;
 use tokio::sync::Mutex;
-use voting_tree::{crypto::hash_bytes, VotingTree};
+use voting_tree::VotingTree;
 use zk_associated::storage::InMemoryTreeState;
 
 type GitHubUser = String;
@@ -29,6 +32,7 @@ type GitHubUser = String;
 struct ServiceState {
     github_users: HashSet<GitHubUser>,
     tree_state: InMemoryTreeState,
+    votes: Vec<String>
 }
 impl ServiceState {
     // register a voter, takes a risc0 receipt as input (currently not prover-generic)
@@ -65,7 +69,7 @@ impl ServiceState {
 
 fn default_tree_state() -> InMemoryTreeState {
     let mut voting_tree: VotingTree = VotingTree {
-        zero_node: hash_bytes(vec![0; 32]),
+        zero_node: hash(CryptoHasherSha256, &vec![0; 32]),
         zero_levels: Vec::new(),
         // size must equal tree depth
         filled: vec![vec![]; 5],
@@ -108,6 +112,7 @@ async fn main() {
     let service_state: ServiceState = ServiceState {
         github_users: HashSet::new(),
         tree_state,
+        votes: Vec::new()
     };
     let shared_state = Arc::new(Mutex::new(service_state));
     let app = Router::new()
@@ -157,7 +162,7 @@ async fn register(
 async fn vote(
     Extension(state): Extension<Arc<Mutex<ServiceState>>>,
     Json(payload): Json<Receipt>,
-) -> impl IntoResponse{
+) -> impl IntoResponse {
     let is_valid: bool = verify_vote(payload, state.lock().await.tree_state.root_history.clone());
     if is_valid {
         println!("Accepted: Valid vote!");
@@ -182,6 +187,7 @@ async fn submit_zk_vote() {
     let mut service_state: ServiceState = ServiceState {
         github_users: HashSet::new(),
         tree_state,
+        votes: Vec::new()
     };
     let mut identity: UniqueIdentity = UniqueIdentity {
         identity: None,
@@ -217,7 +223,7 @@ async fn submit_zk_vote() {
     assert_eq!(&signature, &deserialized_signature);
 
     assert!(signer.is_valid_signature(signature.clone(), &data));
-    identity.compute_public_identity(signer.signed_public_key.unwrap());
+    identity.compute_public_identity(signer.signed_public_key.unwrap(), "Overlord".to_string());
     // register the voter
     service_state
         .process_registration_request(
@@ -233,6 +239,7 @@ async fn submit_zk_vote() {
         root_history: service_state.tree_state.root_history.clone(),
         snapshot: service_state.tree_state.voting_tree.clone(),
         nullifier: identity.nullifier.clone().expect("Missing Nullifier"),
+        vote: "Overlord".to_string(),
         public_key_string: public_key_string.clone(),
     });
     let is_valid: bool = verify_vote(proof, service_state.tree_state.root_history.clone());

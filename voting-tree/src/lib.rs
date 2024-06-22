@@ -1,5 +1,4 @@
-pub mod crypto;
-use crypto::hash_left_right;
+use crypto::{hash_left_right, CryptoHasherSha256};
 use serde::{Deserialize, Serialize};
 
 pub const ROOT_HISTORY_SIZE: u16 = 30u16;
@@ -18,8 +17,9 @@ impl VotingTree {
         let mut zero_levels: Vec<Vec<u8>> = vec![self.zero_node.clone()];
         for _i in 0..self.depth - 1 {
             zero_levels.push(hash_left_right(
-                zero_levels[zero_levels.len() - 1].clone(),
-                zero_levels[zero_levels.len() - 1].clone(),
+                CryptoHasherSha256,
+                zero_levels[zero_levels.len() - 1].clone().as_mut(),
+                zero_levels[zero_levels.len() - 1].clone().as_mut(),
             ));
         }
         self.zero_levels = zero_levels;
@@ -30,10 +30,18 @@ impl VotingTree {
         for i in 0..self.depth {
             if current_index % 2 == 0 {
                 self.filled[i] = current_hash.clone();
-                current_hash = hash_left_right(current_hash, self.zero_levels[i].clone());
+                current_hash = hash_left_right(
+                    CryptoHasherSha256,
+                    current_hash.as_mut(),
+                    self.zero_levels[i].clone().as_mut(),
+                );
             } else {
                 let left = self.filled[i].clone();
-                current_hash = hash_left_right(left.clone(), current_hash.clone());
+                current_hash = hash_left_right(
+                    CryptoHasherSha256,
+                    left.clone().as_mut(),
+                    current_hash.clone().as_mut(),
+                );
             }
             current_index /= 2;
         }
@@ -45,9 +53,17 @@ impl VotingTree {
         let mut current_hash: Vec<u8> = leaf.clone();
         for i in 0..self.depth {
             if current_index % 2 == 0 {
-                current_hash = hash_left_right(current_hash, self.zero_levels[i].clone());
+                current_hash = hash_left_right(
+                    CryptoHasherSha256,
+                    current_hash.as_mut(),
+                    self.zero_levels[i].clone().as_mut(),
+                );
             } else {
-                current_hash = hash_left_right(self.filled[i].clone(), current_hash.clone());
+                current_hash = hash_left_right(
+                    CryptoHasherSha256,
+                    self.filled[i].clone().as_mut(),
+                    current_hash.clone().as_mut(),
+                );
             }
             current_index /= 2;
         }
@@ -57,10 +73,10 @@ impl VotingTree {
 
 #[test]
 fn test_tree() {
-    use crypto::hash_bytes;
+    use crypto::hash;
     // construct merkle tree
     let mut tree: VotingTree = VotingTree {
-        zero_node: hash_bytes(vec![0; 32]),
+        zero_node: hash(CryptoHasherSha256, &vec![0; 32]),
         zero_levels: Vec::new(),
         filled: vec![vec![], vec![], vec![], vec![], vec![]],
         root: None,

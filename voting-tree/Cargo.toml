@@ -9,3 +9,4 @@ uint = "0.9.0"
 sha2 = "0.10.0"
 digest = "0.10.0"
 serde = {version="1.0.197", features=["derive"]}
+crypto = {path="../crypto"}

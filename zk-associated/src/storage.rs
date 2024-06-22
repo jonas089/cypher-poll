@@ -1,4 +1,5 @@
-use voting_tree::{crypto::hash_bytes, VotingTree};
+use crypto::{hash, CryptoHasherSha256};
+use voting_tree::VotingTree;
 
 /// In production, this would live on a Blockchain
 /// a derivation of the tornadocash merkle tree
@@ -22,7 +23,7 @@ impl InMemoryTreeState {
         leafs: Vec<Identity>,
     ) -> InMemoryTreeState {
         let mut voting_tree: VotingTree = VotingTree {
-            zero_node: hash_bytes(vec![0; 32]),
+            zero_node: hash(CryptoHasherSha256, &vec![0; 32]),
             zero_levels: Vec::new(),
             // size must equal tree depth
             filled: vec![vec![]; 5],

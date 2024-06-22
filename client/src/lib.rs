@@ -7,7 +7,8 @@ use std::{
     env,
     fs::{self, File},
     io::{Read, Write},
-    path::PathBuf, time::Duration,
+    path::PathBuf,
+    time::Duration,
 };
 
 use clap::{Parser, Subcommand};
@@ -44,10 +45,14 @@ pub enum Command {
         random_seed: String,
         #[arg(short, long)]
         username: String,
+        #[arg(short, long)]
+        vote: String
     },
     Vote {
         #[arg(short, long)]
         public_key_path: String,
+        #[arg(short, long)]
+        vote: String
     },
 }
 
@@ -61,6 +66,7 @@ pub fn run(cli: Cli) {
             private_key_path,
             username,
             random_seed,
+            vote
         } => {
             // construct the serialized registration payload
             let public_key_string: String =
@@ -95,7 +101,7 @@ pub fn run(cli: Cli) {
                 signature_deserialized.push(Mpi::from_slice(series))
             }
             assert_eq!(&signature, &signature_deserialized);
-            identity.compute_public_identity(signer.signed_public_key.unwrap());
+            identity.compute_public_identity(signer.signed_public_key.unwrap(), vote);
             // the public identity
             let public_identity: Identity = identity.identity.unwrap();
             let payload: IdentityPayload = IdentityPayload {
@@ -103,7 +109,7 @@ pub fn run(cli: Cli) {
                 signature_serialized,
                 public_key_string,
                 identity: public_identity,
-                username,
+                username
             };
             // todo: submit payload to server
             // should return a tree snapshot
@@ -120,7 +126,7 @@ pub fn run(cli: Cli) {
             snapshot_file.write(&response.bytes().unwrap()).unwrap();
         }
         // voting requires the exact tree snapshot of the leaf
-        Command::Vote { public_key_path } => {
+        Command::Vote { public_key_path, vote } => {
             let snapshot_path: PathBuf = PathBuf::from(env::var("SNAPSHOT_PATH").unwrap());
             let nullifier_path: PathBuf = PathBuf::from(env::var("NULLIFIER_PATH").unwrap());
             let mut snapshot_file = File::open(snapshot_path).unwrap();
@@ -139,6 +145,7 @@ pub fn run(cli: Cli) {
                 root_history,
                 snapshot,
                 nullifier,
+                vote,
                 public_key_string,
             });
             // todo: submit payload to server
@@ -151,7 +158,7 @@ pub fn run(cli: Cli) {
                 .json(&proof)
                 .send()
                 .expect("Failed to submit proof");
-            if !response.status().is_success(){
+            if !response.status().is_success() {
                 println!("Error: Response Status {}", &response.status())
             }
         }
