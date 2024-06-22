@@ -16,3 +16,6 @@ tokio = {version="1.38", features=["full"]}
 serde = {version="1", features=["derive"]}
 voting-tree = {path="../voting-tree"}
 serde_json="1.0.1"
+risc0-groth16 = { version = "0.21.0", optional=true }
+[features]
+groth16 = ["risc0-groth16"]

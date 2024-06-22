@@ -18,7 +18,10 @@ use crypto::{
 };
 use pgp::types::Mpi;
 use reqwest::blocking::Client;
-use risc0_prover::prover::prove_default;
+#[cfg(not(feature = "groth16"))]
+use risc0_prover::prover::prove_default as prover;
+#[cfg(feature = "groth16")]
+use risc0_prover::prover::prove_groth16 as prover;
 use risc0_types::CircuitInputs;
 use risc0_zkvm::Receipt;
 use serde_json;
@@ -144,7 +147,7 @@ pub fn run(cli: Cli) {
             let mut nullifier_json = String::new();
             nullifier_file.read_to_string(&mut nullifier_json).unwrap();
             let nullifier: Nullifier = serde_json::from_str(&mut nullifier_json).unwrap();
-            let proof: Receipt = prove_default(CircuitInputs {
+            let proof: Receipt = prover(CircuitInputs {
                 root_history,
                 snapshot,
                 nullifier,

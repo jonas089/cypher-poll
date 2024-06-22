@@ -776,6 +776,7 @@ dependencies = [
  "crypto",
  "pgp",
  "reqwest 0.12.5",
+ "risc0-groth16",
  "risc0-prover",
  "risc0-types",
  "risc0-zkvm",
