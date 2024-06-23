@@ -4,7 +4,10 @@
 mod constants;
 pub mod gauth;
 use axum::{
-    extract::DefaultBodyLimit, response::IntoResponse, routing::{get, post}, Extension, Json, Router
+    extract::DefaultBodyLimit,
+    response::IntoResponse,
+    routing::{get, post},
+    Extension, Json, Router,
 };
 use crossterm::{execute, terminal::Clear};
 use gauth::query_user_gpg_keys;
@@ -18,68 +21,73 @@ use std::{collections::HashSet, sync::Arc};
 // if the public key corresponds to the associated github keys
 // for the user
 use client::types::IdentityPayload;
-use crypto::{gpg::GpgSigner, hash, identity::{Identity, Nullifier}, CryptoHasherSha256};
+use colored::*;
+use crypto::{
+    gpg::GpgSigner,
+    hash,
+    identity::{Identity, Nullifier},
+    CryptoHasherSha256,
+};
 use pgp::types::Mpi;
 use risc0_prover::verifier::verify_vote;
 use tokio::sync::Mutex;
 use voting_tree::VotingTree;
 use zk_associated::storage::TreeState;
-use colored::*;
 
 type GitHubUser = String;
 
 #[derive(Clone)]
-struct InMemoryTreeState{
-    tree_state: TreeState
+struct InMemoryTreeState {
+    tree_state: TreeState,
 }
-impl InMemoryTreeState{
-    fn insert_nullifier(&mut self, identity: Identity){
+impl InMemoryTreeState {
+    fn insert_nullifier(&mut self, identity: Identity) {
         let new_state = self.tree_state.insert_nullifier(identity);
         self.tree_state = new_state;
     }
-    fn insert_used_nullifier(&mut self, nullifier: Nullifier){
+    fn insert_used_nullifier(&mut self, nullifier: Nullifier) {
         self.tree_state.used_nullifiers.push(nullifier);
     }
-    fn get(&self) -> TreeState{
+    fn get(&self) -> TreeState {
         // must be mutable, will be inserted -> clone
         self.tree_state.clone()
     }
 }
 
 #[derive(Clone)]
-struct InMemoryGitHubUserState{
-    github_users: HashSet<GitHubUser>
+struct InMemoryGitHubUserState {
+    github_users: HashSet<GitHubUser>,
 }
-impl InMemoryGitHubUserState{
-    fn insert(&mut self, user: String){
+impl InMemoryGitHubUserState {
+    fn insert(&mut self, user: String) {
         self.github_users.insert(user);
     }
-    fn get(&self, user: &String) -> Option<&String>{
-        match self.github_users.get(user){
+    fn get(&self, user: &String) -> Option<&String> {
+        match self.github_users.get(user) {
             Some(user) => Some(user),
-            None => None
+            None => None,
         }
     }
 }
 
 #[derive(Clone)]
-struct InMemoryVoteState{
+struct InMemoryVoteState {
     votes: HashMap<String, u64>,
 }
-impl InMemoryVoteState{
-    fn insert(&mut self, vote: String){
-        if self.votes.contains_key(&vote){
+impl InMemoryVoteState {
+    fn insert(&mut self, vote: String) {
+        if self.votes.contains_key(&vote) {
             self.votes.insert(vote.clone(), self.get(&vote) + 1);
-        }
-        else{
+        } else {
             self.votes.insert(vote, 1u64);
         }
     }
-    fn get(&self, vote: &String) -> &u64{
-        self.votes.get(vote).expect(format!("Failed to get votes for {}", vote).as_str())
+    fn get(&self, vote: &String) -> &u64 {
+        self.votes
+            .get(vote)
+            .expect(format!("Failed to get votes for {}", vote).as_str())
     }
 }
-
 
 #[derive(Clone)]
 struct ServiceState {
@@ -116,7 +124,12 @@ impl ServiceState {
         };
         self.github_users.insert(username.clone());
         self.tree_state.insert_nullifier(identity);
-        println!("{}{}: Github@{}", "+++++++++ \n".yellow(), "Accepted".bold().green(), &username.bold().green())
+        println!(
+            "{}{}: Github@{}",
+            "+++++++++ \n".yellow(),
+            "Accepted".bold().green(),
+            &username.bold().green()
+        )
     }
 }
 
@@ -151,22 +164,35 @@ async fn ping() -> &'static str {
 async fn main() {
     let mut stdout = io::stdout();
     execute!(stdout, Clear(crossterm::terminal::ClearType::All)).unwrap();
-    print!( "{}",
-r#"
+    print!(
+        "{}",
+        r#"
  ██████╗██╗   ██╗██████╗ ██╗  ██╗███████╗██████╗     ██████╗  ██████╗ ██╗     ██╗     
 ██╔════╝╚██╗ ██╔╝██╔══██╗██║  ██║██╔════╝██╔══██╗    ██╔══██╗██╔═══██╗██║     ██║     
 ██║      ╚████╔╝ ██████╔╝███████║█████╗  ██████╔╝    ██████╔╝██║   ██║██║     ██║     
 ██║       ╚██╔╝  ██╔═══╝ ██╔══██║██╔══╝  ██╔══██╗    ██╔═══╝ ██║   ██║██║     ██║     
 ╚██████╗   ██║   ██║     ██║  ██║███████╗██║  ██║    ██║     ╚██████╔╝███████╗███████╗
  ╚═════╝   ╚═╝   ╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝    ╚═╝      ╚═════╝ ╚══════╝╚══════╝
-"#.red()
+"#
+        .red()
     );
-    println!("{}", " by Jonas Pauli, Casper Association ".bold().white().bold().on_red());
+    println!(
+        "{}",
+        " by Jonas Pauli, Casper Association "
+            .bold()
+            .white()
+            .bold()
+            .on_red()
+    );
     let tree_state: TreeState = default_tree_state();
     let service_state: ServiceState = ServiceState {
-        github_users: InMemoryGitHubUserState{github_users: HashSet::new()},
-        tree_state: InMemoryTreeState{tree_state},
-        votes: InMemoryVoteState{votes: HashMap::new()},
+        github_users: InMemoryGitHubUserState {
+            github_users: HashSet::new(),
+        },
+        tree_state: InMemoryTreeState { tree_state },
+        votes: InMemoryVoteState {
+            votes: HashMap::new(),
+        },
     };
     let shared_state = Arc::new(Mutex::new(service_state));
     let app = Router::new()
@@ -195,7 +221,13 @@ async fn register(
     for series in &payload.signature_serialized {
         deserialized_signature.push(Mpi::from_slice(series))
     }
-    state.lock().await.tree_state.get().voting_tree.add_leaf(payload.identity.clone());
+    state
+        .lock()
+        .await
+        .tree_state
+        .get()
+        .voting_tree
+        .add_leaf(payload.identity.clone());
     state
         .lock()
         .await
@@ -218,10 +250,23 @@ async fn vote(
     Json(payload): Json<Receipt>,
 ) -> impl IntoResponse {
     let current_state = state.lock().await.tree_state.get();
-    let (vote, nullifier): (String, Vec<u8>) = verify_vote(payload, current_state.root_history, current_state.used_nullifiers);
+    let (vote, nullifier): (String, Vec<u8>) = verify_vote(
+        payload,
+        current_state.root_history,
+        current_state.used_nullifiers,
+    );
     state.lock().await.votes.insert(vote.clone());
-    state.lock().await.tree_state.insert_used_nullifier(nullifier);
-    println!("{}{}: Anonymous User voted for {}", "+++++++++ \n".yellow(), "Accepted".bold().green(), &vote.bold().red());
+    state
+        .lock()
+        .await
+        .tree_state
+        .insert_used_nullifier(nullifier);
+    println!(
+        "{}{}: Anonymous User voted for {}",
+        "+++++++++ \n".yellow(),
+        "Accepted".bold().green(),
+        &vote.bold().red()
+    );
     println!(
         "{}Current State of the Election: {:?}",
         "+++++++++ \n".yellow(),
@@ -249,9 +294,15 @@ async fn submit_zk_vote() {
     // verify the vote proof and apply the vote to tree_state
     let tree_state: TreeState = default_tree_state();
     let mut service_state: ServiceState = ServiceState {
-        github_users: InMemoryGitHubUserState{github_users: HashSet::new()},
-        tree_state: InMemoryTreeState{tree_state: tree_state},
-        votes: InMemoryVoteState{votes: HashMap::new()},
+        github_users: InMemoryGitHubUserState {
+            github_users: HashSet::new(),
+        },
+        tree_state: InMemoryTreeState {
+            tree_state: tree_state,
+        },
+        votes: InMemoryVoteState {
+            votes: HashMap::new(),
+        },
     };
     let mut identity: UniqueIdentity = UniqueIdentity {
         identity: None,
@@ -306,5 +357,9 @@ async fn submit_zk_vote() {
         vote: "Overlord".to_string(),
         public_key_string: public_key_string.clone(),
     });
-    verify_vote(proof, service_state.tree_state.get().root_history, service_state.tree_state.get().used_nullifiers);
+    verify_vote(
+        proof,
+        service_state.tree_state.get().root_history,
+        service_state.tree_state.get().used_nullifiers,
+    );
 }

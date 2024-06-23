@@ -16,11 +16,11 @@ pub fn prove_default(inputs: CircuitInputs) -> Receipt {
 }
 
 #[cfg(feature = "groth16")]
-pub fn prove_groth16(inputs: CircuitInputs) -> Receipt{
+pub fn prove_groth16(inputs: CircuitInputs) -> Receipt {
     use risc0_groth16::docker::stark_to_snark;
     use risc0_zkvm::{
-        get_prover_server, recursion::identity_p254, CompactReceipt, ExecutorEnv,
-        ExecutorImpl, InnerReceipt, ProverOpts, Receipt, VerifierContext,
+        get_prover_server, recursion::identity_p254, CompactReceipt, ExecutorEnv, ExecutorImpl,
+        InnerReceipt, ProverOpts, Receipt, VerifierContext,
     };
 
     let env = ExecutorEnv::builder()
