@@ -4,16 +4,13 @@
 mod constants;
 pub mod gauth;
 use axum::{
-    extract::DefaultBodyLimit,
-    response::IntoResponse,
-    routing::{get, post},
-    Extension, Json, Router,
+    extract::DefaultBodyLimit, response::IntoResponse, routing::{get, post}, Extension, Json, Router
 };
 use crossterm::{execute, terminal::Clear};
-use gauth::{query_user_gpg_keys, raw_gpg_keys};
+use gauth::query_user_gpg_keys;
 use reqwest::StatusCode;
 use risc0_zkvm::Receipt;
-use std::{env, io};
+use std::{collections::HashMap, env, io};
 use std::{collections::HashSet, sync::Arc};
 // registers voters / inserts new identities into the tree
 // if the signature is valid
@@ -21,20 +18,74 @@ use std::{collections::HashSet, sync::Arc};
 // if the public key corresponds to the associated github keys
 // for the user
 use client::types::IdentityPayload;
-use crypto::{gpg::GpgSigner, hash, identity::Identity, CryptoHasherSha256};
+use crypto::{gpg::GpgSigner, hash, identity::{Identity, Nullifier}, CryptoHasherSha256};
 use pgp::types::Mpi;
 use risc0_prover::verifier::verify_vote;
 use tokio::sync::Mutex;
 use voting_tree::VotingTree;
-use zk_associated::storage::InMemoryTreeState;
+use zk_associated::storage::TreeState;
 use colored::*;
 
 type GitHubUser = String;
+
+#[derive(Clone)]
+struct InMemoryTreeState{
+    tree_state: TreeState
+}
+impl InMemoryTreeState{
+    fn insert_nullifier(&mut self, identity: Identity){
+        let new_state = self.tree_state.insert_nullifier(identity);
+        self.tree_state = new_state;
+    }
+    fn insert_used_nullifier(&mut self, nullifier: Nullifier){
+        self.tree_state.used_nullifiers.push(nullifier);
+    }
+    fn get(&self) -> TreeState{
+        // must be mutable, will be inserted -> clone
+        self.tree_state.clone()
+    }
+}
+
+#[derive(Clone)]
+struct InMemoryGitHubUserState{
+    github_users: HashSet<GitHubUser>
+}
+impl InMemoryGitHubUserState{
+    fn insert(&mut self, user: String){
+        self.github_users.insert(user);
+    }
+    fn get(&self, user: &String) -> Option<&String>{
+        match self.github_users.get(user){
+            Some(user) => Some(user),
+            None => None
+        }
+    }
+}
+
+#[derive(Clone)]
+struct InMemoryVoteState{
+    votes: HashMap<String, u64>,
+}
+impl InMemoryVoteState{
+    fn insert(&mut self, vote: String){
+        if self.votes.contains_key(&vote){
+            self.votes.insert(vote.clone(), self.get(&vote) + 1);
+        }
+        else{
+            self.votes.insert(vote, 1u64);
+        }
+    }
+    fn get(&self, vote: &String) -> &u64{
+        self.votes.get(vote).expect(format!("Failed to get votes for {}", vote).as_str())
+    }
+}
+
+
 #[derive(Clone)]
 struct ServiceState {
-    github_users: HashSet<GitHubUser>,
+    github_users: InMemoryGitHubUserState,
     tree_state: InMemoryTreeState,
-    votes: Vec<String>,
+    votes: InMemoryVoteState,
 }
 impl ServiceState {
     // register a voter, takes a risc0 receipt as input (currently not prover-generic)
@@ -57,7 +108,7 @@ impl ServiceState {
         signer.init_verifier();
         // verify that the key exists in the Username's Raw Key List
         let raw_gpg_keys: Vec<String> =
-            raw_gpg_keys(&query_user_gpg_keys(env::var("GITHUB_TOKEN").unwrap()).await);
+            query_user_gpg_keys(env::var("GITHUB_TOKEN").unwrap()).await;
         assert!(raw_gpg_keys.contains(&signer.public_key_asc_string.clone().unwrap()));
         assert!(signer.is_valid_signature(signature, &data));
         if self.github_users.get(&username).is_some() {
@@ -65,11 +116,11 @@ impl ServiceState {
         };
         self.github_users.insert(username.clone());
         self.tree_state.insert_nullifier(identity);
-        println!("{} {}: Github@{}", "+++++++++ \n".yellow(), "Accepted".bold().green(), &username.bold().green())
+        println!("{}{}: Github@{}", "+++++++++ \n".yellow(), "Accepted".bold().green(), &username.bold().green())
     }
 }
 
-fn default_tree_state() -> InMemoryTreeState {
+fn default_tree_state() -> TreeState {
     let mut voting_tree: VotingTree = VotingTree {
         zero_node: hash(CryptoHasherSha256, &vec![0; 32]),
         zero_levels: Vec::new(),
@@ -83,7 +134,7 @@ fn default_tree_state() -> InMemoryTreeState {
     };
     voting_tree.calculate_zero_levels();
 
-    InMemoryTreeState {
+    TreeState {
         root_history: Vec::new(),
         used_nullifiers: Vec::new(),
         voting_tree,
@@ -111,11 +162,11 @@ r#"
 "#.red()
     );
     println!("{}", " by Jonas Pauli, Casper Association ".bold().white().bold().on_red());
-    let tree_state: InMemoryTreeState = default_tree_state();
+    let tree_state: TreeState = default_tree_state();
     let service_state: ServiceState = ServiceState {
-        github_users: HashSet::new(),
-        tree_state,
-        votes: Vec::new(),
+        github_users: InMemoryGitHubUserState{github_users: HashSet::new()},
+        tree_state: InMemoryTreeState{tree_state},
+        votes: InMemoryVoteState{votes: HashMap::new()},
     };
     let shared_state = Arc::new(Mutex::new(service_state));
     let app = Router::new()
@@ -144,7 +195,7 @@ async fn register(
     for series in &payload.signature_serialized {
         deserialized_signature.push(Mpi::from_slice(series))
     }
-    //state.lock().await.tree_state.voting_tree.add_leaf(payload.identity.clone());
+    state.lock().await.tree_state.get().voting_tree.add_leaf(payload.identity.clone());
     state
         .lock()
         .await
@@ -157,7 +208,7 @@ async fn register(
         )
         .await;
     let snapshot_serialized: Vec<u8> =
-        serde_json::to_vec(&state.lock().await.tree_state.voting_tree.clone())
+        serde_json::to_vec(&state.lock().await.tree_state.get().voting_tree)
             .expect("Failed to serialize snapshot");
     (StatusCode::OK, snapshot_serialized)
 }
@@ -166,12 +217,15 @@ async fn vote(
     Extension(state): Extension<Arc<Mutex<ServiceState>>>,
     Json(payload): Json<Receipt>,
 ) -> impl IntoResponse {
-    let vote: String = verify_vote(payload, state.lock().await.tree_state.root_history.clone());
-    state.lock().await.votes.push(vote.clone());
-    println!("{} {}: Anonymous User voted for {}", "+++++++++ \n".yellow(), "Accepted".bold().green(), &vote.bold().red());
+    let current_state = state.lock().await.tree_state.get();
+    let (vote, nullifier): (String, Vec<u8>) = verify_vote(payload, current_state.root_history, current_state.used_nullifiers);
+    state.lock().await.votes.insert(vote.clone());
+    state.lock().await.tree_state.insert_used_nullifier(nullifier);
+    println!("{}{}: Anonymous User voted for {}", "+++++++++ \n".yellow(), "Accepted".bold().green(), &vote.bold().red());
     println!(
-        "Current State of the Election: {:?}",
-        &state.lock().await.votes
+        "{}Current State of the Election: {:?}",
+        "+++++++++ \n".yellow(),
+        &state.lock().await.votes.votes
     );
     (
         StatusCode::OK,
@@ -193,11 +247,11 @@ async fn submit_zk_vote() {
     // process a registration request using the default keypair in ~/resources/test/
     // generate a vote proof
     // verify the vote proof and apply the vote to tree_state
-    let tree_state: InMemoryTreeState = default_tree_state();
+    let tree_state: TreeState = default_tree_state();
     let mut service_state: ServiceState = ServiceState {
-        github_users: HashSet::new(),
-        tree_state,
-        votes: Vec::new(),
+        github_users: InMemoryGitHubUserState{github_users: HashSet::new()},
+        tree_state: InMemoryTreeState{tree_state: tree_state},
+        votes: InMemoryVoteState{votes: HashMap::new()},
     };
     let mut identity: UniqueIdentity = UniqueIdentity {
         identity: None,
@@ -246,11 +300,11 @@ async fn submit_zk_vote() {
         .await;
     // generate a proof -> redeem the nullifier
     let proof: Receipt = prover(CircuitInputs {
-        root_history: service_state.tree_state.root_history.clone(),
-        snapshot: service_state.tree_state.voting_tree.clone(),
+        root_history: service_state.tree_state.get().root_history,
+        snapshot: service_state.tree_state.get().voting_tree,
         nullifier: identity.nullifier.clone().expect("Missing Nullifier"),
         vote: "Overlord".to_string(),
         public_key_string: public_key_string.clone(),
     });
-    verify_vote(proof, service_state.tree_state.root_history.clone());
+    verify_vote(proof, service_state.tree_state.get().root_history, service_state.tree_state.get().used_nullifiers);
 }

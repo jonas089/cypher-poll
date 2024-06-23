@@ -40,11 +40,9 @@ pub fn prove_groth16(inputs: CircuitInputs) -> Receipt{
     let succinct_receipt = prover.compress(composite_receipt).unwrap();
     let journal = session.journal.unwrap().bytes;
 
-    println!("identity_p254");
     let ident_receipt = identity_p254(&succinct_receipt).unwrap();
     let seal_bytes = ident_receipt.get_seal_bytes();
 
-    println!("stark-to-snark");
     let seal = stark_to_snark(&seal_bytes).unwrap().to_vec();
 
     Receipt::new(

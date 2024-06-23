@@ -6,22 +6,22 @@ use voting_tree::VotingTree;
 /// to include nullifiers on-chain efficiently
 use crypto::identity::{Identity, Nullifier};
 pub type TreeRoot = Vec<u8>;
-pub type Snapshot = VotingTree;
+pub type Snapshot = TreeState;
 
 #[derive(Clone)]
-pub struct InMemoryTreeState {
+pub struct TreeState {
     pub root_history: Vec<TreeRoot>,
     pub used_nullifiers: Vec<Nullifier>,
     pub voting_tree: VotingTree,
     pub leafs: Vec<Identity>,
 }
 
-impl InMemoryTreeState {
+impl TreeState {
     pub fn new(
         root_history: Vec<TreeRoot>,
         used_nullifiers: Vec<Nullifier>,
         leafs: Vec<Identity>,
-    ) -> InMemoryTreeState {
+    ) -> TreeState {
         let mut voting_tree: VotingTree = VotingTree {
             zero_node: hash(CryptoHasherSha256, &vec![0; 32]),
             zero_levels: Vec::new(),
@@ -35,7 +35,7 @@ impl InMemoryTreeState {
         };
         voting_tree.calculate_zero_levels();
 
-        InMemoryTreeState {
+        TreeState {
             root_history,
             used_nullifiers,
             voting_tree,
@@ -43,9 +43,7 @@ impl InMemoryTreeState {
         }
     }
 
-    pub fn insert_nullifier(&mut self, identity: Identity) -> Snapshot {
-        // take a snapshot of the Tree before insertion
-        let snapshot = self.voting_tree.clone();
+    pub fn insert_nullifier(&mut self, identity: Identity) -> TreeState {
         // append the real tree by a new identity
         self.voting_tree.add_leaf(identity.clone());
         // store the new identity
@@ -54,6 +52,6 @@ impl InMemoryTreeState {
         self.root_history
             .push(self.voting_tree.root.clone().expect("Tree has no root"));
         // return the snapshot -> this will be used when generating the merkle proof
-        snapshot
+        self.clone()
     }
 }

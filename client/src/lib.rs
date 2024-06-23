@@ -143,7 +143,7 @@ pub fn run(cli: Cli) {
                 vec![snapshot.root.clone().expect("Snapshot has no root")];
             let public_key_string: String =
                 fs::read_to_string(public_key_path).expect("Failed to read public key");
-            let mut nullifier_file = File::open(nullifier_path).unwrap();
+            let mut nullifier_file: File = File::open(nullifier_path).unwrap();
             let mut nullifier_json = String::new();
             nullifier_file.read_to_string(&mut nullifier_json).unwrap();
             let nullifier: Nullifier = serde_json::from_str(&mut nullifier_json).unwrap();
