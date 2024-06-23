@@ -2,6 +2,8 @@
 Cypher-poll is an anonymous voting protocol which anyone with a GitHub identity and at least one associated GPG key can use.
 The service can be modified to enforce further restrictions on who is eligible to vote, by default any GitHub account with a GPG key can vote once (not once per GPG key!).
 
+![reg](https://github.com/jonas089/cypher-poll/blob/master/assets/demo.png)
+
 ## Registration process
 The registration process consists of the user submitting their `Identity`, which is a `Hash` of their unique `Nullifier` concatenated by their `Public Key`.
 If the user successfully generates a `Signature` for a `Public Key` that is associated with their GitHub account, the Hash of the `Nullifier` and `Public Key` is inserted in a fixed size `Merkle Tree`. A Snapshot of the `Merkle Tree` at that point in time is returned to the user.
@@ -49,13 +51,6 @@ export SNAPSHOT_PATH="/Users/chef/Desktop/cypher-poll/artifacts/snapshot"
 | `data` | `*-key-path` | `random-seed` | `username` |
 | --- | --- | --- | --- |
 | challenge to be signed with the gpg key | path to a gpg key encoded in .asc (ASCII) | seed used to generate a unique nullifier, must be random and kept secret | github username |
-
-## Screenshots
-### Registration Success
-![reg](https://github.com/jonas089/cypher-poll/blob/master/assets/register.png)
-### Voting Success
-![vote](https://github.com/jonas089/cypher-poll/blob/master/assets/vote.png)
-
 
 ## The vote argument
 The vote must be the same for both `register` and `vote`. With `vote` a leaf in the Tree is redeemed that was inserted during `register`. Trying to redeem an invalid vote will result in an error => an incorrect leaf.
