@@ -52,5 +52,5 @@ export SNAPSHOT_PATH="/Users/chef/Desktop/cypher-poll/artifacts/snapshot"
 | --- | --- | --- | --- |
 | challenge to be signed with the gpg key | path to a gpg key encoded in .asc (ASCII) | seed used to generate a unique nullifier, must be random and kept secret | github username |
 
-## The vote argument
+## The `vote` Argument
 The vote must be the same for both `register` and `vote`. With `vote` a leaf in the Tree is redeemed that was inserted during `register`. Trying to redeem an invalid vote will result in an error => an incorrect leaf.
