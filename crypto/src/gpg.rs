@@ -64,7 +64,7 @@ impl GpgSigner {
             .as_ref()
             .unwrap()
             .create_signature(
-                || "".to_string(),
+                || "1234".to_string(),
                 pgp::crypto::hash::HashAlgorithm::MD5,
                 &data,
             )
