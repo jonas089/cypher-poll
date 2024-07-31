@@ -13,6 +13,13 @@ To issue a vote, the user must submit a zero knowledge proof that the `Nullifier
 
 If the proof is accepted, the vote is counted and the `Nullifier` is added to a list to ensure that it cannot be used again.
 
+## Generate and Export a GPG key
+```
+gpg --full-generate-key
+gpg --armor --export-secret-keys keyID_or_email > private_key.sec.asc
+gpg --armor --export keyID_or_email > public_key.asc
+```
+
 ## Specify Github API Token
 Example `.bashrc`:
 ```bash
