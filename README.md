@@ -1,3 +1,7 @@
+> [!NOTE]
+> This project has a few limitations. The more people participate in a poll the more anonymous it becomes. A poll with just one participant is not anonymous. When there are two participants then the anonymity is limited since you know that either of the two voted for X. For many participants this should be secure (no audit, no guarantees).
+
+
 # Anonymous GitHub GPG Voting Protocol built with Risc0
 Cypher-poll is an anonymous voting protocol which anyone with a GitHub identity and at least one associated GPG key can use.
 The service can be modified to enforce further restrictions on who is eligible to vote, by default any GitHub account with a GPG key can vote once (not once per GPG key!).
